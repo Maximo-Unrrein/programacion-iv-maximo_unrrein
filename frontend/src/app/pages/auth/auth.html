@@ -1,0 +1,99 @@
+<ms-ascii-background mode="hero" />
+
+<div class="flex items-center justify-between px-4 pt-4 sm:px-8 sm:pt-6">
+  <a routerLink="/" class="inline-flex items-center gap-1.5 text-sm text-muted transition hover:text-fg">
+    <ms-icon name="arrow-left" class="size-5" /> Volver
+  </a>
+  <ms-theme-toggle />
+</div>
+
+<!-- Mensaje de error debajo de un campo -->
+<ng-template #fieldError let-message>
+  @if (message) {
+    <span class="text-xs font-medium text-danger" role="alert">{{ message }}</span>
+  }
+</ng-template>
+
+<main class="grid flex-1 place-items-center px-4 py-8">
+  <section class="glass grid w-full animate-rise gap-6 p-6 sm:p-10" [class]="mode() === 'login' ? 'max-w-[440px]' : 'max-w-[620px]'">
+    <div class="grid justify-items-center gap-2 text-center">
+      <ms-logo [size]="56" class="mb-1 drop-shadow-[0_0_18px_rgb(var(--glow-rgb)/0.4)]" />
+      <h1 class="text-2xl font-bold">{{ mode() === 'login' ? 'Bienvenido de vuelta' : 'Creá tu cuenta' }}</h1>
+      <p class="text-sm text-muted">{{ mode() === 'login' ? 'Ingresá para entrar en tu órbita.' : 'Completá tus datos para sumarte a MaxSend.' }}</p>
+    </div>
+
+    <div class="relative mx-auto grid w-full max-w-[380px] grid-cols-2 rounded-full border border-line bg-elevated p-1" role="tablist">
+      <span
+        class="absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-brand shadow-[var(--glow)] transition-transform duration-300"
+        [class.translate-x-full]="mode() === 'registro'"
+      ></span>
+      @for (tab of [{ id: 'login', label: 'Ingresar' }, { id: 'registro', label: 'Registrarse' }]; track tab.id) {
+        <button
+          type="button"
+          role="tab"
+          class="relative z-10 min-h-10 cursor-pointer font-display font-semibold transition-colors"
+          [class]="mode() === tab.id ? 'text-on-brand' : 'text-muted'"
+          [attr.aria-selected]="mode() === tab.id"
+          (click)="setMode($any(tab.id))"
+        >
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    @if (sesion() === 'expirada' && mode() === 'login') {
+      <p class="flex items-center gap-2 rounded-xl border border-line-strong bg-surface-strong px-4 py-3 text-sm" role="status">
+        <ms-icon name="clock" class="size-4 text-faint" /> Tu sesión expiró. Ingresá de nuevo para continuar.
+      </p>
+    }
+
+    @if (mode() === 'login') {
+      <!-- ===================== LOGIN ===================== -->
+      <form class="grid gap-4" [formGroup]="loginForm" (ngSubmit)="submitLogin()" novalidate>
+        <label class="grid gap-1.5">
+          <span class="text-sm font-medium text-muted">Correo o nombre de usuario</span>
+          <input
+            class="input-field"
+            formControlName="user"
+            autocomplete="username"
+            placeholder="vos@correo.com o tu_usuario"
+            [class.!border-danger]="err(loginForm.controls.user)"
+          />
+          <ng-container [ngTemplateOutlet]="fieldError" [ngTemplateOutletContext]="{ $implicit: err(loginForm.controls.user) }" />
+        </label>
+
+        <label class="grid gap-1.5">
+          <span class="text-sm font-medium text-muted">Contraseña</span>
+          <span class="relative">
+            <input
+              class="input-field pr-12"
+              formControlName="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              autocomplete="current-password"
+              placeholder="8+ caracteres, una mayúscula y un número"
+              [class.!border-danger]="err(loginForm.controls.password)"
+            />
+            <button type="button" class="icon-btn absolute top-1/2 right-1 size-10 -translate-y-1/2" [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="showPassword.set(!showPassword())">
+              <ms-icon [name]="showPassword() ? 'eye-off' : 'eye'" class="size-5" />
+            </button>
+          </span>
+          <ng-container [ngTemplateOutlet]="fieldError" [ngTemplateOutletContext]="{ $implicit: err(loginForm.controls.password) }" />
+        </label>
+
+        @if (error()) {
+          <p class="rounded-xl border border-danger/60 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert">{{ error() }}</p>
+        }
+
+        <button class="btn btn-primary mt-1 w-full" type="submit" [disabled]="loading()">
+          @if (loading()) {
+            <span class="size-4 animate-spin rounded-full border-2 border-current/30 border-t-current" aria-hidden="true"></span>
+          }
+          Ingresar
+        </button>
+      </form>
+    } @else {
+      <!-- ===================== REGISTRO ===================== -->
+      <ms-user-form [loading]="loading()" [error]="error()" (send)="register($event)" />
+    }
+  </section>
+</main>

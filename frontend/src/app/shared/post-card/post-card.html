@@ -1,0 +1,255 @@
+<!-- Fila de autor (se usa en ambos paneles) -->
+<ng-template #authorRow>
+  <div class="flex min-w-0 items-center gap-3">
+    <a [routerLink]="['/u', state().author?.username]" class="shrink-0">
+      <ms-avatar [user]="state().author" [size]="38" />
+    </a>
+    <div class="min-w-0 flex-1 leading-tight">
+      <a [routerLink]="['/u', state().author?.username]" class="block truncate font-semibold hover:underline">
+        {{ state().author?.displayName }}
+      </a>
+      <span class="text-sm text-faint">&#64;{{ state().author?.username }} · {{ state().createdAt | ago }}</span>
+    </div>
+    @if (!standalone()) {
+      <a [routerLink]="['/p', state().id]" class="icon-btn size-9" title="Ver publicación" aria-label="Ver publicación en grande">
+        <ms-icon name="expand" class="size-[18px]" />
+      </a>
+    }
+    @if (canDelete()) {
+      <button type="button" class="icon-btn size-9 hover:text-danger" title="Borrar publicación" aria-label="Borrar publicación" (click)="deletePost()">
+        <ms-icon name="trash" class="size-[18px]" />
+      </button>
+    }
+  </div>
+</ng-template>
+
+<!-- Botón de me gusta -->
+<ng-template #likeButton>
+  <button
+    type="button"
+    class="group inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full px-2 text-sm font-medium transition"
+    [class]="state().likedByMe ? 'text-primary' : 'text-muted hover:text-fg'"
+    [attr.aria-pressed]="state().likedByMe"
+    [attr.aria-label]="state().likedByMe ? 'Quitar me gusta' : 'Me gusta'"
+    (click)="toggleLike()"
+  >
+    @for (k of [popKey()]; track k) {
+      <ms-icon name="heart" [filled]="state().likedByMe" class="size-[22px]" [class.animate-pop]="k > 0" />
+    }
+    <span class="tabular-nums">{{ state().likesCount }}</span>
+  </button>
+</ng-template>
+
+<!-- Guardar y compartir -->
+<ng-template #saveShare>
+  <button
+    type="button"
+    class="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full px-2 text-sm font-medium transition"
+    [class]="state().savedByMe ? 'text-fg' : 'text-muted hover:text-fg'"
+    [attr.aria-pressed]="state().savedByMe"
+    [attr.aria-label]="state().savedByMe ? 'Quitar de guardados' : 'Guardar publicación'"
+    [title]="state().savedByMe ? 'Guardada · tocá para quitarla' : 'Guardar'"
+    (click)="toggleSave()"
+  >
+    <ms-icon name="bookmark" [filled]="state().savedByMe" class="size-[21px]" />
+    <span class="hidden text-xs @md:inline">{{ state().savedByMe ? 'Guardada' : 'Guardar' }}</span>
+  </button>
+  <button
+    type="button"
+    class="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full px-2 text-sm font-medium text-muted transition hover:text-fg"
+    aria-label="Compartir con un usuario"
+    title="Compartir"
+    (click)="shareOpen.set(true)"
+  >
+    <ms-icon name="share" class="size-[21px]" />
+  </button>
+</ng-template>
+
+<article class="glass overflow-hidden">
+  <div
+    #track
+    class="scrollbar-none flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain @2xl:grid @2xl:overflow-hidden"
+    [class]="state().imageUrl ? (standalone() ? '@2xl:h-[min(80dvh,760px)] @2xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]' : '@2xl:h-[520px] @2xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]') : (standalone() ? '@2xl:h-[min(70dvh,560px)] @2xl:grid-cols-2' : '@2xl:h-[360px] @2xl:grid-cols-2')"
+  >
+    <!-- ===== Panel A: contenido ===== -->
+    <section class="flex w-full shrink-0 snap-start flex-col @2xl:min-h-0 @2xl:w-auto">
+      <div class="px-4 pt-4 pb-3 @2xl:hidden">
+        <ng-container [ngTemplateOutlet]="authorRow" />
+      </div>
+
+      @if (state().imageUrl) {
+        <div class="relative aspect-[4/5] max-h-[68dvh] w-full overflow-hidden bg-ink @2xl:aspect-auto @2xl:h-full @2xl:max-h-none" (dblclick)="likeFromMedia()">
+          <img [src]="state().imageUrl | media" alt="" aria-hidden="true" class="absolute inset-0 size-full scale-110 object-cover opacity-50 blur-2xl" />
+          <img
+            [src]="state().imageUrl | media"
+            [alt]="state().title + ' — imagen publicada por ' + state().author?.displayName"
+            class="relative size-full object-contain"
+            loading="lazy"
+          />
+          @if (burst()) {
+            <span class="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden="true">
+              <ms-icon name="heart" [filled]="true" class="size-24 animate-burst text-white drop-shadow-[0_0_30px_rgb(var(--glow-rgb)/0.9)]" />
+            </span>
+          }
+        </div>
+        <div class="grid gap-1 px-4 pt-3 @2xl:hidden">
+          <h3 class="text-lg font-semibold">{{ state().title }}</h3>
+          <p class="text-muted"><ms-rich-text [text]="state().content" /></p>
+        </div>
+      } @else {
+        <div
+          class="relative flex min-h-56 flex-1 items-center overflow-hidden px-6 py-8 @2xl:min-h-0 @2xl:px-10"
+          (dblclick)="likeFromMedia()"
+        >
+          <span class="pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-primary/20 blur-3xl" aria-hidden="true"></span>
+          <div class="scrollbar-thin relative grid max-h-full gap-3 overflow-y-auto">
+            <h3 class="font-display text-2xl/tight font-bold @2xl:text-3xl/tight">{{ state().title }}</h3>
+            <p class="text-muted" [class]="state().content.length > 180 ? 'text-base/relaxed' : 'text-lg/snug @2xl:text-xl/snug'">
+              <ms-rich-text [text]="state().content" />
+            </p>
+          </div>
+          @if (burst()) {
+            <span class="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden="true">
+              <ms-icon name="heart" [filled]="true" class="size-20 animate-burst text-primary" />
+            </span>
+          }
+        </div>
+      }
+
+      <!-- Acciones en celular -->
+      <div class="flex items-center gap-1 px-2 py-2 @2xl:hidden">
+        <ng-container [ngTemplateOutlet]="likeButton" />
+        <button type="button" class="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full px-2 text-sm font-medium text-muted" (click)="showComments(true)">
+          <ms-icon name="comment" class="size-[22px]" />
+          <span class="tabular-nums">{{ state().commentsCount }}</span>
+        </button>
+        <ng-container [ngTemplateOutlet]="saveShare" />
+        <button type="button" class="ml-auto inline-flex min-h-10 cursor-pointer items-center gap-1 px-2 text-sm font-medium text-accent" (click)="showComments()">
+          Conversación <ms-icon name="arrow-right" class="size-4" />
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== Panel B: conversación ===== -->
+    <section class="relative w-full shrink-0 snap-start @2xl:w-auto @2xl:border-l @2xl:border-line" aria-label="Conversación">
+      <div class="absolute inset-0 flex flex-col">
+        <!-- Encabezado -->
+        <div class="hidden px-5 pt-5 pb-4 @2xl:block">
+          <ng-container [ngTemplateOutlet]="authorRow" />
+        </div>
+        <div class="flex items-center gap-1 px-2 pt-2 pb-1 @2xl:hidden">
+          <button type="button" class="icon-btn" aria-label="Volver a la publicación" (click)="showContent()">
+            <ms-icon name="arrow-left" />
+          </button>
+          <span class="font-display font-semibold">Conversación</span>
+          <span class="text-sm text-faint">· {{ state().commentsCount }}</span>
+        </div>
+
+        @if (state().imageUrl) {
+          <div class="hidden gap-1 border-b border-line px-5 pb-4 @2xl:grid">
+            <h3 class="font-semibold">{{ state().title }}</h3>
+            <p class="text-[15px] text-muted"><ms-rich-text [text]="state().content" /></p>
+          </div>
+        }
+
+        <!-- Acciones (escritorio) -->
+        <div class="hidden items-center gap-1 border-b border-line px-3 py-1.5 @2xl:flex">
+          <ng-container [ngTemplateOutlet]="likeButton" />
+          <button type="button" class="inline-flex min-h-10 cursor-pointer items-center gap-1.5 rounded-full px-2 text-sm font-medium text-muted hover:text-fg" (click)="showComments(true)" aria-label="Comentar">
+            <ms-icon name="comment" class="size-[22px]" />
+            <span class="tabular-nums">{{ state().commentsCount }}</span>
+          </button>
+          <span class="ml-auto flex"><ng-container [ngTemplateOutlet]="saveShare" /></span>
+        </div>
+
+        <!-- Nuevo comentario (arriba: la lista va de más reciente a más antiguo) -->
+        <form class="flex items-center gap-2 border-b border-line py-2 pr-2 pl-4" (ngSubmit)="sendComment()">
+          <input
+            #commentInput
+            name="comment"
+            class="min-h-10 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-faint"
+            placeholder="Escribí un comentario…"
+            maxlength="300"
+            autocomplete="off"
+            aria-label="Escribí un comentario"
+            [ngModel]="draft()"
+            (ngModelChange)="draft.set($event)"
+          />
+          <button type="submit" class="icon-btn size-10 text-accent disabled:text-faint" [disabled]="!draft().trim() || sending()" aria-label="Enviar comentario">
+            <ms-icon name="send" />
+          </button>
+        </form>
+
+        <!-- Comentarios: más recientes primero, "cargar más" trae los anteriores sin perder los ya mostrados -->
+        <div #list class="scrollbar-thin flex-1 overflow-y-auto px-4 py-3 @2xl:px-5">
+          <ul class="grid gap-3.5">
+            @for (c of comments(); track c.id) {
+              <li class="group/c flex gap-2.5">
+                <a [routerLink]="['/u', c.author?.username]" class="mt-0.5"><ms-avatar [user]="c.author" [size]="28" /></a>
+                <div class="min-w-0 flex-1 text-[15px] leading-snug">
+                  <a [routerLink]="['/u', c.author?.username]" class="mr-1.5 font-semibold hover:underline">{{ c.author?.displayName }}</a>
+                  @if (editingId() === c.id) {
+                    <form class="mt-1 grid gap-1.5" (ngSubmit)="saveEdit(c)">
+                      <input
+                        name="edit"
+                        class="input-field min-h-9 px-3 py-1.5 text-[15px]"
+                        maxlength="300"
+                        aria-label="Editar comentario"
+                        [ngModel]="editDraft()"
+                        (ngModelChange)="editDraft.set($event)"
+                        (keydown.escape)="cancelEdit()"
+                        msAutofocus
+                        [msAutofocusSelect]="true"
+                      />
+                      <span class="flex gap-3 text-xs font-semibold">
+                        <button type="submit" class="cursor-pointer hover:underline disabled:opacity-50" [disabled]="!editDraft().trim() || savingEdit()">Guardar</button>
+                        <button type="button" class="cursor-pointer text-muted hover:text-fg" (click)="cancelEdit()">Cancelar</button>
+                      </span>
+                    </form>
+                  } @else {
+                    <span class="wrap-anywhere">{{ c.content }}</span>
+                    <div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-faint">
+                      {{ c.createdAt | ago }}
+                      @if (c.modificado) {
+                        <span class="italic" [title]="'Editado ' + (c.modifiedAt | ago)">· editado</span>
+                      }
+                      @if (c.author?.id === me()?.id) {
+                        <button type="button" class="cursor-pointer font-semibold hover:text-fg" (click)="startEdit(c)">Editar</button>
+                      }
+                    </div>
+                  }
+                </div>
+                @if (canDeleteComment(c) && editingId() !== c.id) {
+                  <button
+                    type="button"
+                    class="icon-btn size-8 opacity-100 hover:text-danger @2xl:opacity-0 @2xl:group-hover/c:opacity-100 @2xl:focus-visible:opacity-100"
+                    aria-label="Borrar comentario"
+                    (click)="removeComment(c)"
+                  >
+                    <ms-icon name="close" class="size-4" />
+                  </button>
+                }
+              </li>
+            } @empty {
+              <li class="grid h-full place-items-center py-8 text-center text-sm text-faint">
+                Todavía no hay comentarios.<br />Empezá la conversación.
+              </li>
+            }
+          </ul>
+          @if (hasMore()) {
+            <button
+              type="button"
+              class="mt-4 cursor-pointer text-sm font-semibold text-muted hover:text-fg disabled:opacity-50"
+              [disabled]="loadingComments()"
+              (click)="loadMoreComments()"
+            >
+              {{ loadingComments() ? 'Cargando…' : 'Cargar más comentarios (' + (state().commentsCount - comments().length) + ')' }}
+            </button>
+          }
+        </div>
+      </div>
+    </section>
+  </div>
+</article>
+
+<ms-share-dialog [post]="state()" [open]="shareOpen()" (closed)="shareOpen.set(false)" (shared)="onShared($event)" />

@@ -1,0 +1,22 @@
+# Dependencias y builds
+node_modules/
+dist/
+.angular/
+coverage/
+
+# Variables de entorno: tienen el secreto JWT y las contraseñas de prueba (usar .env.example como modelo)
+.env
+.env.*
+!.env.example
+
+# Imágenes subidas en versiones viejas (ahora se guardan en MongoDB)
+backend/uploads/
+
+# Configuración local de herramientas
+.claude/
+.idea/
+
+# Logs y sistema
+*.log
+.DS_Store
+Thumbs.db

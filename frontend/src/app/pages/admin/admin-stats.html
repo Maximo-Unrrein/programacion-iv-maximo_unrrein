@@ -1,0 +1,149 @@
+<div class="grid gap-6">
+  <!-- Totales generales -->
+  <section class="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Totales">
+    @for (card of cards(); track card.label) {
+      <div class="glass p-5">
+        <p class="text-sm text-muted">{{ card.label }}</p>
+        <p class="mt-1 font-display text-3xl font-bold">{{ card.value ?? '—' }}</p>
+      </div>
+    }
+  </section>
+
+  <!-- Período -->
+  <section class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between" aria-label="Período">
+    <div class="flex flex-wrap items-center gap-1" role="radiogroup" aria-label="Período rápido">
+      <ms-icon name="calendar" class="mr-1 size-4 text-faint" />
+      @for (p of presets; track p.days) {
+        <button
+          type="button"
+          role="radio"
+          class="min-h-9 cursor-pointer rounded-full px-3 text-sm font-medium transition"
+          [class]="preset() === p.days ? 'bg-surface-strong text-fg' : 'text-muted hover:text-fg'"
+          [attr.aria-checked]="preset() === p.days"
+          (click)="usePreset(p.days)"
+        >
+          Últimos {{ p.label }}
+        </button>
+      }
+    </div>
+    <div class="flex flex-wrap items-end gap-2">
+      <label class="grid gap-1 text-xs text-muted">
+        Desde
+        <input type="date" class="input-field min-h-10 py-1.5 text-sm" [value]="period().from" [max]="period().to" (change)="setRange('from', $any($event.target).value)" />
+      </label>
+      <label class="grid gap-1 text-xs text-muted">
+        Hasta
+        <input type="date" class="input-field min-h-10 py-1.5 text-sm" [value]="period().to" [min]="period().from" [max]="today" (change)="setRange('to', $any($event.target).value)" />
+      </label>
+    </div>
+  </section>
+  @if (rangeError() || chartsError(); as message) {
+    <p class="rounded-xl border border-danger/60 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert">{{ message }}</p>
+  }
+
+  <!-- Gráficos -->
+  <div class="grid gap-4 lg:grid-cols-2">
+    <section class="glass grid gap-3 p-5" aria-labelledby="c1">
+      <header class="flex items-baseline justify-between gap-2">
+        <div>
+          <h2 id="c1" class="font-display font-semibold">Publicaciones por usuario</h2>
+          <p class="text-xs text-faint">Barras · {{ period().from | date: 'd MMM' : 'UTC' }} – {{ period().to | date: 'd MMM y' : 'UTC' }}</p>
+        </div>
+        <span class="font-display text-2xl font-bold">{{ series()?.postsByUser?.total ?? '—' }}</span>
+      </header>
+      @if (series(); as s) {
+        @if (s.postsByUser.data.length) {
+          <ms-chart kind="horizontal-bar" label="Publicaciones" [labels]="s.postsByUser.labels" [data]="s.postsByUser.data" class="h-64" />
+        } @else {
+          <p class="grid h-64 place-items-center text-sm text-faint">Sin publicaciones en el período.</p>
+        }
+      } @else {
+        <div class="h-64 animate-pulse rounded-2xl bg-surface-strong"></div>
+      }
+    </section>
+
+    <section class="glass grid gap-3 p-5" aria-labelledby="c2">
+      <header class="flex items-baseline justify-between gap-2">
+        <div>
+          <h2 id="c2" class="font-display font-semibold">Comentarios realizados</h2>
+          <p class="text-xs text-faint">Línea · por día</p>
+        </div>
+        <span class="font-display text-2xl font-bold">{{ series()?.commentsByDay?.total ?? '—' }}</span>
+      </header>
+      @if (series(); as s) {
+        <ms-chart kind="line" label="Comentarios" [labels]="s.commentsByDay.labels" [data]="s.commentsByDay.data" class="h-64" />
+      } @else {
+        <div class="h-64 animate-pulse rounded-2xl bg-surface-strong"></div>
+      }
+    </section>
+
+    <section class="glass grid gap-3 p-5" aria-labelledby="c3">
+      <header>
+        <h2 id="c3" class="font-display font-semibold">Comentarios por publicación</h2>
+        <p class="text-xs text-faint">Torta · las 10 publicaciones con más comentarios del período</p>
+      </header>
+      @if (series(); as s) {
+        @if (s.commentsByPost.data.length) {
+          <ms-chart kind="doughnut" label="Comentarios" [labels]="s.commentsByPost.labels" [data]="s.commentsByPost.data" class="h-64" />
+        } @else {
+          <p class="grid h-64 place-items-center text-sm text-faint">Sin comentarios en el período.</p>
+        }
+      } @else {
+        <div class="h-64 animate-pulse rounded-2xl bg-surface-strong"></div>
+      }
+    </section>
+
+    <section class="glass grid gap-3 p-5" aria-labelledby="c4">
+      <header class="flex items-baseline justify-between gap-2">
+        <div>
+          <h2 id="c4" class="font-display font-semibold">Me gusta otorgados</h2>
+          <p class="text-xs text-faint">Barras · por día</p>
+        </div>
+        <span class="font-display text-2xl font-bold">{{ series()?.likesByDay?.total ?? '—' }}</span>
+      </header>
+      @if (series(); as s) {
+        <ms-chart kind="bar" label="Me gusta" [labels]="s.likesByDay.labels" [data]="s.likesByDay.data" class="h-64" />
+      } @else {
+        <div class="h-64 animate-pulse rounded-2xl bg-surface-strong"></div>
+      }
+    </section>
+
+    <section class="glass grid gap-3 p-5" aria-labelledby="c5">
+      <header class="flex items-baseline justify-between gap-2">
+        <div>
+          <h2 id="c5" class="font-display font-semibold">Ingresos por usuario</h2>
+          <p class="text-xs text-faint">Torta · logins en el período</p>
+        </div>
+        <span class="font-display text-2xl font-bold">{{ series()?.loginsByUser?.total ?? '—' }}</span>
+      </header>
+      @if (series(); as s) {
+        @if (s.loginsByUser.data.length) {
+          <ms-chart kind="doughnut" label="Ingresos" [labels]="s.loginsByUser.labels" [data]="s.loginsByUser.data" class="h-64" />
+        } @else {
+          <p class="grid h-64 place-items-center text-sm text-faint">Sin ingresos en el período.</p>
+        }
+      } @else {
+        <div class="h-64 animate-pulse rounded-2xl bg-surface-strong"></div>
+      }
+    </section>
+
+    <section class="glass grid gap-3 p-5" aria-labelledby="c6">
+      <header class="flex items-baseline justify-between gap-2">
+        <div>
+          <h2 id="c6" class="font-display font-semibold">Visitas a cada perfil</h2>
+          <p class="text-xs text-faint">Barras · sólo visitas de otros usuarios</p>
+        </div>
+        <span class="font-display text-2xl font-bold">{{ series()?.visitsByProfile?.total ?? '—' }}</span>
+      </header>
+      @if (series(); as s) {
+        @if (s.visitsByProfile.data.length) {
+          <ms-chart kind="bar" label="Visitas" [labels]="s.visitsByProfile.labels" [data]="s.visitsByProfile.data" class="h-64" />
+        } @else {
+          <p class="grid h-64 place-items-center text-sm text-faint">Sin visitas en el período.</p>
+        }
+      } @else {
+        <div class="h-64 animate-pulse rounded-2xl bg-surface-strong"></div>
+      }
+    </section>
+  </div>
+</div>

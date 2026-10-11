@@ -1,0 +1,140 @@
+<!-- Mensaje de error debajo de un campo -->
+<ng-template #fieldError let-message>
+  @if (message) {
+    <span class="text-xs font-medium text-danger" role="alert">{{ message }}</span>
+  }
+</ng-template>
+
+<form class="grid gap-4" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <!-- Foto de perfil -->
+  <div class="flex items-center gap-4">
+    <div class="relative grid size-20 shrink-0 place-items-center overflow-hidden rounded-full border border-dashed border-line-strong bg-elevated">
+      @if (avatarPreview()) {
+        <img [src]="avatarPreview()" alt="Vista previa de tu foto de perfil" class="size-full object-cover" />
+      } @else {
+        <ms-icon name="camera" class="size-7 text-faint" />
+      }
+    </div>
+    <div class="grid gap-1">
+      <span class="text-sm font-medium text-muted">Foto de perfil <span class="text-faint">(opcional)</span></span>
+      <div class="flex flex-wrap items-center gap-2">
+        <label class="btn btn-ghost min-h-9 cursor-pointer px-4 text-sm">
+          {{ avatar() ? 'Cambiar' : 'Elegir imagen' }}
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="sr-only" (change)="onAvatar($event)" />
+        </label>
+        @if (avatar()) {
+          <button type="button" class="text-sm text-muted hover:text-danger" (click)="clearAvatar()">Quitar</button>
+        }
+      </div>
+      <span class="text-xs text-faint">JPG, PNG, WEBP o GIF · máx. 3 MB</span>
+      <ng-container [ngTemplateOutlet]="fieldError" [ngTemplateOutletContext]="{ $implicit: avatarError() }" />
+    </div>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <label class="grid content-start gap-1.5">
+      <span class="text-sm font-medium text-muted">Nombre</span>
+      <input class="input-field" formControlName="firstName" autocomplete="given-name" placeholder="Ana" [class.!border-danger]="err(form.controls.firstName)" />
+      <ng-container [ngTemplateOutlet]="fieldError" [ngTemplateOutletContext]="{ $implicit: err(form.controls.firstName, 'Sólo letras') }" />
+    </label>
+    <label class="grid content-start gap-1.5">
+      <span class="text-sm font-medium text-muted">Apellido</span>
+      <input class="input-field" formControlName="lastName" autocomplete="family-name" placeholder="García" [class.!border-danger]="err(form.controls.lastName)" />
+      <ng-container [ngTemplateOutlet]="fieldError" [ngTemplateOutletContext]="{ $implicit: err(form.controls.lastName, 'Sólo letras') }" />
+    </label>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <label class="grid content-start gap-1.5">
+      <span class="text-sm font-medium text-muted">Correo electrónico</span>
+      <input class="input-field" type="email" formControlName="email" autocomplete="email" placeholder="vos@correo.com" [class.!border-danger]="err(form.controls.email)" />
+      <ng-container [ngTemplateOutlet]="fieldError" [ngTemplateOutletContext]="{ $implicit: err(form.controls.email) }" />
+    </label>
+    <label class="grid content-start gap-1.5">
+      <span class="text-sm font-medium text-muted">Nombre de usuario</span>
+      <input class="input-field" formControlName="username" autocomplete="username" placeholder="tu_usuario" [class.!border-danger]="err(form.controls.username)" />
+      <ng-container [ngTemplateOutlet]="fieldError" [ngTemplateOutletContext]="{ $implicit: err(form.controls.username, 'Sólo letras, números, guion bajo y punto') }" />
+    </label>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <label class="grid content-start gap-1.5">
+      <span class="text-sm font-medium text-muted">Contraseña</span>
+      <span class="relative">
+        <input
+          class="input-field pr-12"
+          formControlName="password"
+          [type]="showPassword() ? 'text' : 'password'"
+          autocomplete="new-password"
+          [class.!border-danger]="err(form.controls.password)"
+        />
+        <button type="button" class="icon-btn absolute top-1/2 right-1 size-10 -translate-y-1/2" [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="showPassword.set(!showPassword())">
+          <ms-icon [name]="showPassword() ? 'eye-off' : 'eye'" class="size-5" />
+        </button>
+      </span>
+      <ul class="grid gap-0.5 text-xs" aria-label="Requisitos de la contraseña">
+        @for (check of passwordChecks(); track check.label) {
+          <li class="flex items-center gap-1.5" [class]="check.ok ? 'text-fg' : (err(form.controls.password) ? 'text-danger' : 'text-faint')">
+            <ms-icon [name]="check.ok ? 'check' : 'close'" class="size-3.5" [stroke]="2.4" /> {{ check.label }}
+          </li>
+        }
+      </ul>
+    </label>
+    <label class="grid content-start gap-1.5">
+      <span class="text-sm font-medium text-muted">Repetir contraseña</span>
+      <input
+        class="input-field"
+        formControlName="passwordConfirm"
+        [type]="showPassword() ? 'text' : 'password'"
+        autocomplete="new-password"
+        [class.!border-danger]="err(form.controls.passwordConfirm)"
+      />
+      <ng-container [ngTemplateOutlet]="fieldError" [ngTemplateOutletContext]="{ $implicit: err(form.controls.passwordConfirm) }" />
+    </label>
+  </div>
+
+  <label class="grid gap-1.5 sm:max-w-[calc(50%-0.5rem)]">
+    <span class="text-sm font-medium text-muted">Fecha de nacimiento</span>
+    <input class="input-field" type="date" formControlName="birthDate" min="1900-01-01" [max]="maxBirthDate" [class.!border-danger]="err(form.controls.birthDate)" />
+    <ng-container [ngTemplateOutlet]="fieldError" [ngTemplateOutletContext]="{ $implicit: err(form.controls.birthDate) }" />
+  </label>
+
+  <label class="grid gap-1.5">
+    <span class="flex justify-between text-sm font-medium text-muted">
+      <span>Descripción breve <span class="text-faint">(opcional)</span></span>
+      <span class="text-faint tabular-nums">{{ bioMax - bioLength().length }}</span>
+    </span>
+    <textarea msAutosize class="input-field min-h-24 resize-none" formControlName="bio" rows="3" [maxlength]="bioMax" placeholder="Contá algo sobre vos"></textarea>
+  </label>
+
+  @if (withRole()) {
+    <fieldset class="grid gap-2">
+      <legend class="mb-1.5 text-sm font-medium text-muted">Perfil</legend>
+      <div class="grid gap-2 sm:grid-cols-2">
+        @for (r of [{ id: 'user', label: 'Usuario', hint: 'Publica, comenta y reacciona' }, { id: 'admin', label: 'Administrador', hint: 'Además gestiona usuarios y estadísticas' }]; track r.id) {
+          <label
+            class="flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition"
+            [class]="form.controls.role.value === r.id ? 'border-fg bg-surface-strong' : 'border-line-strong hover:border-faint'"
+          >
+            <input type="radio" formControlName="role" [value]="r.id" class="mt-1 accent-current" />
+            <span class="grid leading-tight">
+              <span class="font-semibold">{{ r.label }}</span>
+              <span class="text-xs text-faint">{{ r.hint }}</span>
+            </span>
+          </label>
+        }
+      </div>
+    </fieldset>
+  }
+
+  @if (error() || localError(); as message) {
+    <p class="rounded-xl border border-danger/60 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert">{{ message }}</p>
+  }
+
+  <button class="btn btn-primary mt-1 w-full" type="submit" [disabled]="loading()">
+    @if (loading()) {
+      <span class="size-4 animate-spin rounded-full border-2 border-current/30 border-t-current" aria-hidden="true"></span>
+    }
+    {{ submitLabel() }}
+  </button>
+</form>

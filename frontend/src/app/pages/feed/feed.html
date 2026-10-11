@@ -1,0 +1,55 @@
+<div class="mx-auto grid w-full max-w-[880px] content-start gap-6">
+  <!-- Invitación a publicar -->
+  <div class="flex items-center gap-3 rounded-full border border-line bg-surface/60 py-1.5 pr-1.5 pl-1.5 backdrop-blur-md">
+    <ms-avatar [user]="auth.user()" [size]="40" />
+    <button type="button" class="min-h-10 flex-1 cursor-text text-left text-muted" (click)="ui.openComposer()">
+      ¿Qué querés enviar, {{ auth.user()?.displayName }}?
+    </button>
+    <button type="button" class="icon-btn" aria-label="Enviar una imagen" title="Enviar una imagen" (click)="ui.openComposer()">
+      <ms-icon name="image" />
+    </button>
+  </div>
+
+  <!-- Orden -->
+  <div class="scrollbar-none -mx-4 flex items-center gap-1 overflow-x-auto px-4 text-sm" role="radiogroup" aria-label="Ordenar publicaciones">
+    <span class="mr-2 shrink-0 text-faint">Ordenar por</span>
+    @for (o of sorts; track o.id) {
+      <button
+        type="button"
+        role="radio"
+        class="min-h-9 shrink-0 cursor-pointer rounded-full px-3 font-medium transition"
+        [class]="sort() === o.id ? 'bg-surface-strong text-fg' : 'text-muted hover:text-fg'"
+        [attr.aria-checked]="sort() === o.id"
+        (click)="setSort(o.id)"
+      >
+        {{ o.label }}
+      </button>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="rounded-2xl border border-danger/50 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert">{{ error() }}</p>
+  }
+
+  @for (post of posts(); track post.id) {
+    <ms-post-card [post]="post" (removed)="onRemoved($event)" class="animate-rise" />
+  } @empty {
+    @if (!loading() && !error()) {
+      <div class="grid justify-items-center gap-3 py-20 text-center text-muted">
+        <ms-icon name="send" class="size-10 text-faint" />
+        <p>Todavía no hay envíos.</p>
+        <button type="button" class="btn btn-primary" (click)="ui.openComposer()">Hacé el primero</button>
+      </div>
+    }
+  }
+
+  @if (loading()) {
+    @for (i of [1, 2]; track i) {
+      <div class="glass h-[420px] animate-shimmer bg-linear-90 from-surface via-surface-strong to-surface bg-size-[200%_100%]"></div>
+    }
+  }
+  @if (done() && posts().length) {
+    <p class="py-6 text-center text-sm text-faint">Llegaste al final de la órbita ✦</p>
+  }
+  <div (msInfiniteScroll)="loadMore()" aria-hidden="true"></div>
+</div>

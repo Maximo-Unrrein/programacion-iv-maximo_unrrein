@@ -1,0 +1,192 @@
+@if (notFound()) {
+  <div class="grid justify-items-center gap-3 py-24 text-center text-muted">
+    <ms-icon name="user" class="size-10 text-faint" />
+    <p>No encontramos a <strong class="text-fg">&#64;{{ username() }}</strong>.</p>
+  </div>
+} @else if (profile(); as p) {
+  <div class="mx-auto grid max-w-[880px] gap-10">
+    <!-- ===== Cabecera ===== -->
+    <header class="grid gap-6 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start sm:gap-10">
+      <!-- Avatar con órbita -->
+      <div class="relative mx-auto size-36 sm:mt-2 sm:size-40">
+        <svg viewBox="0 0 200 200" class="pointer-events-none absolute -inset-5 size-[calc(100%+2.5rem)] animate-[spin_40s_linear_infinite] text-faint" aria-hidden="true">
+          <ellipse cx="100" cy="100" rx="96" ry="96" fill="none" stroke="currentColor" stroke-opacity="0.5" stroke-dasharray="2 7" />
+          <circle cx="196" cy="100" r="3.5" fill="currentColor" />
+        </svg>
+        <ms-avatar [user]="p" [size]="160" class="!size-full shadow-[var(--glow)]" />
+
+        @if (isMe()) {
+          <label
+            class="absolute inset-0 grid cursor-pointer place-items-center rounded-full bg-ink/60 text-white opacity-0 transition hover:opacity-100 focus-within:opacity-100"
+            [class.opacity-100]="uploading()"
+          >
+            @if (uploading()) {
+              <span class="size-8 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden="true"></span>
+            } @else {
+              <span class="grid justify-items-center gap-1 text-xs font-semibold"><ms-icon name="camera" class="size-7" /> Cambiar foto</span>
+            }
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="sr-only" aria-label="Cambiar foto de perfil" (change)="onAvatarFile($event)" [disabled]="uploading()" />
+          </label>
+        }
+      </div>
+
+      <div class="grid gap-5 text-center sm:text-left">
+        @if (!editing()) {
+          <div class="grid gap-1">
+            <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 sm:justify-start">
+              <h1 class="text-3xl font-bold sm:text-4xl">{{ p.displayName }}</h1>
+              <span class="inline-flex items-center gap-1 rounded-full bg-surface-strong px-2.5 py-0.5 text-xs font-semibold text-muted">
+                <ms-icon [name]="p.role === 'admin' ? 'shield' : 'user'" class="size-3.5" /> {{ p.role === 'admin' ? 'Administrador' : 'Usuario' }}
+              </span>
+              @if (p.active === false) {
+                <span class="rounded-full bg-danger/15 px-2.5 py-0.5 text-xs font-semibold text-danger">Deshabilitado</span>
+              }
+            </div>
+            <p class="text-muted">&#64;{{ p.username }}</p>
+          </div>
+
+          @if (p.bio) {
+            <p class="max-w-xl text-[17px] leading-relaxed whitespace-pre-wrap">{{ p.bio }}</p>
+          } @else if (isMe()) {
+            <button type="button" class="cursor-pointer justify-self-center text-left text-muted italic hover:text-fg sm:justify-self-start" (click)="startEdit()">
+              Agregá una descripción para que te conozcan…
+            </button>
+          }
+
+          <!-- Datos del usuario -->
+          <dl class="grid gap-2 text-sm sm:grid-cols-2">
+            <div class="flex items-center justify-center gap-2 sm:justify-start">
+              <dt class="sr-only">Nombre y apellido</dt>
+              <ms-icon name="user" class="size-4 text-faint" />
+              <dd>{{ p.firstName }} {{ p.lastName }}</dd>
+            </div>
+            @if (p.email) {
+              <div class="flex items-center justify-center gap-2 sm:justify-start">
+                <dt class="sr-only">Correo</dt>
+                <ms-icon name="mail" class="size-4 text-faint" />
+                <dd class="truncate">{{ p.email }}</dd>
+              </div>
+            }
+            @if (p.birthDate) {
+              <div class="flex items-center justify-center gap-2 sm:justify-start">
+                <dt class="sr-only">Fecha de nacimiento</dt>
+                <ms-icon name="cake" class="size-4 text-faint" />
+                <dd>{{ p.birthDate | date: 'd MMMM y' : 'UTC' }} <span class="text-faint">· {{ p.birthDate | age }} años</span></dd>
+              </div>
+            }
+            <div class="flex items-center justify-center gap-2 sm:justify-start">
+              <dt class="sr-only">Miembro desde</dt>
+              <ms-icon name="calendar" class="size-4 text-faint" />
+              <dd>En MaxSend desde {{ p.createdAt | date: 'MMMM y' }}</dd>
+            </div>
+          </dl>
+
+          <div class="flex flex-wrap items-baseline justify-center gap-x-8 gap-y-2 sm:justify-start">
+            <div class="flex items-baseline gap-2">
+              <span class="font-display text-2xl font-bold">{{ p.stats.posts }}</span>
+              <span class="text-sm text-muted">publicaciones</span>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <span class="font-display text-2xl font-bold">{{ p.stats.likes }}</span>
+              <span class="text-sm text-muted">me gusta recibidos</span>
+            </div>
+            @if (p.stats.visits !== null) {
+              <div class="flex items-baseline gap-2" [title]="isMe() ? 'Visitas de otros usuarios a tu perfil' : 'Visitas de otros usuarios'">
+                <span class="font-display text-2xl font-bold">{{ p.stats.visits }}</span>
+                <span class="text-sm text-muted">{{ isMe() ? 'visitas a tu perfil' : 'visitas al perfil' }}</span>
+              </div>
+            }
+          </div>
+
+          @if (isMe()) {
+            <div class="flex flex-wrap items-center justify-center gap-1 sm:justify-start">
+              <button type="button" class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full px-1 text-sm font-semibold hover:underline" (click)="startEdit()">
+                <ms-icon name="edit" class="size-4" /> Editar perfil
+              </button>
+              @if (p.avatarUrl) {
+                <span class="text-faint">·</span>
+                <button type="button" class="min-h-10 cursor-pointer rounded-full px-1 text-sm text-muted hover:text-danger" [disabled]="uploading()" (click)="removeAvatar()">
+                  Quitar foto
+                </button>
+              }
+            </div>
+          }
+        } @else {
+          <!-- ===== Edición de perfil ===== -->
+          <form class="grid gap-4 text-left" [formGroup]="form" (ngSubmit)="save()" novalidate>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <label class="grid content-start gap-1.5">
+                <span class="text-sm font-medium text-muted">Nombre</span>
+                <input class="input-field" formControlName="firstName" autocomplete="given-name" [class.!border-danger]="err('firstName')" />
+                @if (err('firstName', 'Sólo letras'); as e) {
+                  <span class="text-xs font-medium text-danger" role="alert">{{ e }}</span>
+                }
+              </label>
+              <label class="grid content-start gap-1.5">
+                <span class="text-sm font-medium text-muted">Apellido</span>
+                <input class="input-field" formControlName="lastName" autocomplete="family-name" [class.!border-danger]="err('lastName')" />
+                @if (err('lastName', 'Sólo letras'); as e) {
+                  <span class="text-xs font-medium text-danger" role="alert">{{ e }}</span>
+                }
+              </label>
+            </div>
+            <label class="grid gap-1.5 sm:max-w-[calc(50%-0.5rem)]">
+              <span class="text-sm font-medium text-muted">Fecha de nacimiento</span>
+              <input class="input-field" type="date" formControlName="birthDate" min="1900-01-01" [max]="maxBirthDate" [class.!border-danger]="err('birthDate')" />
+              @if (err('birthDate'); as e) {
+                <span class="text-xs font-medium text-danger" role="alert">{{ e }}</span>
+              }
+            </label>
+            <label class="grid gap-1.5">
+              <span class="flex justify-between text-sm font-medium text-muted">
+                Descripción breve <span class="text-faint tabular-nums">{{ bioMax - form.controls.bio.value.length }}</span>
+              </span>
+              <textarea class="input-field min-h-28 resize-none" formControlName="bio" rows="4" [maxlength]="bioMax" placeholder="Contá algo sobre vos"></textarea>
+            </label>
+            <div class="flex gap-2">
+              <button type="submit" class="btn btn-primary min-h-11" [disabled]="saving()">{{ saving() ? 'Guardando…' : 'Guardar cambios' }}</button>
+              <button type="button" class="btn min-h-11 text-muted hover:text-fg" (click)="editing.set(false)">Cancelar</button>
+            </div>
+          </form>
+        }
+      </div>
+    </header>
+
+    <!-- ===== Últimas publicaciones ===== -->
+    <section class="grid gap-5" aria-labelledby="posts-title">
+      <header>
+        <h2 id="posts-title" class="font-display text-lg font-semibold">{{ isMe() ? 'Mis últimas publicaciones' : 'Últimas publicaciones' }}</h2>
+        <p class="text-sm text-faint">Las más recientes con sus comentarios</p>
+      </header>
+
+      @for (post of posts(); track post.id) {
+        <ms-post-card [post]="post" (removed)="onRemoved($event)" class="animate-rise" />
+      }
+
+      @if (loadingPosts()) {
+        <div class="glass h-[360px] animate-shimmer bg-linear-90 from-surface via-surface-strong to-surface bg-size-[200%_100%]"></div>
+      }
+
+      @if (!loadingPosts() && !posts().length) {
+        <div class="grid justify-items-center gap-3 py-12 text-center text-muted">
+          <ms-icon name="send" class="size-10 text-faint" />
+          <p>{{ isMe() ? 'Todavía no publicaste nada.' : 'Todavía no hay publicaciones.' }}</p>
+          @if (isMe()) {
+            <button type="button" class="btn btn-primary" (click)="ui.openComposer()">Hacer mi primera publicación</button>
+          }
+        </div>
+      }
+      @if (!done() && posts().length && !loadingPosts()) {
+        <button type="button" class="btn btn-ghost justify-self-center" (click)="loadMore()">Ver 3 más</button>
+      }
+    </section>
+  </div>
+} @else {
+  <div class="mx-auto grid max-w-[880px] animate-pulse gap-6 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10">
+    <div class="mx-auto size-36 rounded-full bg-surface sm:size-40"></div>
+    <div class="grid gap-3">
+      <div class="h-9 w-56 rounded-lg bg-surface"></div>
+      <div class="h-5 w-32 rounded bg-surface"></div>
+    </div>
+  </div>
+}
