@@ -6,7 +6,7 @@ import { RouterLink } from '@angular/router';
   selector: 'ms-rich-text',
   imports: [RouterLink],
   template: `@for (part of parts(); track $index) {@if (part.tag) {<a
-        class="font-medium text-accent hover:underline"
+        class="tag-chip mx-px px-2 py-px align-baseline"
         routerLink="/tendencias"
         [queryParams]="{ tag: part.tag }"
         (click)="$event.stopPropagation()"

@@ -9,6 +9,8 @@ export type FeedQuery = {
   sort?: FeedSort;
   offset?: number;
   tag?: string;
+  /** Texto a buscar en el título o el mensaje */
+  q?: string;
   before?: string;
   limit?: number;
 };

@@ -17,7 +17,7 @@ import { Modal } from './modal';
   template: `
     <ms-modal [open]="open()" label="Compartir publicación" (closed)="closed.emit()" style="--modal-w: 440px">
       <section class="glass grid gap-4 bg-elevated p-6">
-        <header>
+        <header class="pr-6">
           <h2 class="text-xl font-bold">Compartir</h2>
           <p class="truncate text-sm text-muted">“{{ post().title }}” · elegí a quién se la querés compartir</p>
         </header>

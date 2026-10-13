@@ -58,6 +58,7 @@ export class Shell {
 
   protected readonly nav = computed<NavItem[]>(() => [
     { label: 'Inicio', hint: 'Lo último de tu órbita', link: '/feed', icon: 'home', dock: true },
+    { label: 'Buscar', hint: 'Personas y publicaciones', link: '/buscar', icon: 'search' },
     { label: 'Tendencias', hint: 'Lo más popular ahora', link: '/tendencias', icon: 'trend', dock: true },
     { label: 'Guardados', hint: 'Lo que guardaste', link: '/guardados', icon: 'bookmark', dock: true },
     { label: 'Compartidos', hint: 'Lo que te compartieron', link: '/compartidos', icon: 'inbox' },

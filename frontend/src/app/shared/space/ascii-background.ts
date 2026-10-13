@@ -10,9 +10,6 @@ import { AsciiMode, AsciiScene } from './ascii-scene';
 @Component({
   selector: 'ms-ascii-background',
   template: `
-    @if (mode() === 'hero') {
-      <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgb(var(--glow-rgb)/0.16),transparent_60%)]"></div>
-    }
     <!-- En modo hero se atenúa el centro para que el texto sobre el fondo se lea bien -->
     <canvas
       #canvas

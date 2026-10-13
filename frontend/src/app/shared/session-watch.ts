@@ -20,7 +20,7 @@ const WARN_BEFORE_MS = 5 * 60_000;
   template: `
     <ms-modal [open]="open()" label="Tu sesión está por vencer" (closed)="open.set(false)" style="--modal-w: 440px">
       <div class="glass grid gap-5 bg-elevated p-6" role="alertdialog" aria-labelledby="session-title">
-        <div class="flex items-start gap-4">
+        <div class="flex items-start gap-4 pr-6">
           <span class="grid size-12 shrink-0 place-items-center rounded-full bg-surface-strong"><ms-icon name="clock" class="size-6" /></span>
           <div class="grid gap-1">
             <h2 id="session-title" class="text-xl font-bold">Tu sesión está por vencer</h2>

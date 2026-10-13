@@ -17,7 +17,7 @@
 <main class="grid flex-1 place-items-center px-4 py-8">
   <section class="glass grid w-full animate-rise gap-6 p-6 sm:p-10" [class]="mode() === 'login' ? 'max-w-[440px]' : 'max-w-[620px]'">
     <div class="grid justify-items-center gap-2 text-center">
-      <ms-logo [size]="56" class="mb-1 drop-shadow-[0_0_18px_rgb(var(--glow-rgb)/0.4)]" />
+      <ms-logo [size]="56" class="mb-1" />
       <h1 class="text-2xl font-bold">{{ mode() === 'login' ? 'Bienvenido de vuelta' : 'Creá tu cuenta' }}</h1>
       <p class="text-sm text-muted">{{ mode() === 'login' ? 'Ingresá para entrar en tu órbita.' : 'Completá tus datos para sumarte a MaxSend.' }}</p>
     </div>

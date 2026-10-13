@@ -26,7 +26,7 @@
 </ng-template>
 
 <!-- ===== Rail compacto (tablet: 768–1023 px) ===== -->
-<aside class="fixed inset-y-0 left-0 z-30 hidden w-20 flex-col items-center border-r border-line bg-bg/70 py-6 backdrop-blur-xl md:flex lg:hidden" aria-label="Navegación principal">
+<aside class="fixed inset-y-0 left-0 z-30 hidden w-20 flex-col items-center border-r border-line py-6 md:flex lg:hidden" aria-label="Navegación principal">
   <a routerLink="/feed" aria-label="MaxSend, inicio"><ms-logo [size]="34" /></a>
   <nav class="mt-12 flex flex-col items-center gap-3">
     @for (item of nav(); track item.link) {
@@ -46,6 +46,9 @@
 <header class="sticky top-0 z-30 flex h-14 items-center justify-between bg-bg/75 pr-1 pl-4 backdrop-blur-xl md:hidden">
   <a routerLink="/feed" aria-label="MaxSend, inicio"><ms-logo [size]="28" /></a>
   <div class="flex items-center">
+    <a routerLink="/buscar" routerLinkActive="!text-fg" class="icon-btn" aria-label="Buscar" title="Buscar">
+      <ms-icon name="search" class="size-[22px]" />
+    </a>
     <a routerLink="/compartidos" routerLinkActive="!text-fg" class="icon-btn" aria-label="Compartidos conmigo" title="Compartidos conmigo">
       <ms-icon name="inbox" class="size-[22px]" />
     </a>
@@ -55,18 +58,21 @@
 </header>
 
 <!-- ===== PC: navegación · contenido · tendencias, todo centrado ===== -->
-<div
-  class="mx-auto w-full max-w-[1320px] lg:grid lg:gap-8 lg:px-8"
-  [class]="showTrends() ? 'lg:grid-cols-[220px_minmax(0,1fr)] 3xl:grid-cols-[220px_minmax(0,1fr)_280px]' : 'lg:grid-cols-[220px_minmax(0,1fr)]'"
->
-  <!-- Navegación minimalista: sin caja ni bordes, ícono + texto + descripción -->
+<!-- Las columnas son siempre las mismas: el contenido del medio no cambia de ancho al navegar -->
+<div class="mx-auto w-full max-w-[1320px] lg:grid lg:grid-cols-[232px_minmax(0,1fr)] lg:gap-8 lg:px-8 3xl:grid-cols-[232px_minmax(0,1fr)_280px]">
+  <!-- Navegación: sólo borde, sin fondo · ícono + texto + descripción -->
   <aside class="hidden lg:block" aria-label="Navegación principal">
-    <div class="sticky top-8 flex h-[calc(100dvh-4rem)] max-h-[760px] flex-col">
-      <a routerLink="/feed" aria-label="MaxSend, inicio" class="mb-10 ml-1 w-fit transition hover:drop-shadow-[0_0_14px_rgb(var(--glow-rgb)/0.5)]">
-        <ms-logo [size]="34" />
+    <div class="sticky top-8 flex h-[calc(100dvh-4rem)] max-h-[780px] flex-col rounded-3xl border border-line px-3 pb-4">
+      <!-- Misma altura que la barra "¿Qué querés enviar…?" del feed: el logo queda alineado con ella -->
+      <a
+        routerLink="/feed"
+        aria-label="MaxSend, inicio"
+        class="mb-5 flex h-14 items-center justify-center transition duration-500 hover:scale-105"
+      >
+        <ms-logo [size]="32" />
       </a>
 
-      <nav class="grid gap-1">
+      <nav class="grid gap-0.5">
         @for (item of nav(); track item.link) {
           <a
             [routerLink]="item.link"
@@ -82,7 +88,7 @@
             } @else {
               <ms-icon [name]="item.icon!" class="size-[22px] transition" [class]="rla.isActive ? 'text-fg' : 'text-faint group-hover:text-fg'" />
             }
-            <span class="grid leading-tight">
+            <span class="grid leading-tight transition-transform duration-300 group-hover:translate-x-1">
               <span class="font-medium transition" [class]="rla.isActive ? 'text-fg' : 'text-muted group-hover:text-fg'">{{ item.label }}</span>
               <span class="text-xs text-faint">{{ item.hint }}</span>
             </span>
@@ -94,27 +100,23 @@
         <ms-icon name="plus" [stroke]="2.2" class="size-5" /> Nuevo envío
       </button>
 
-      <div class="mt-auto flex items-center gap-2 pl-1">
-        <ms-avatar [user]="auth.user()" [size]="34" />
-        <div class="min-w-0 flex-1 leading-tight">
-          <div class="truncate text-sm font-semibold">{{ auth.user()?.displayName }}</div>
-          <div class="truncate text-xs text-faint">&#64;{{ auth.user()?.username }}</div>
-        </div>
+      <div class="mt-auto flex items-center justify-center gap-2">
         <ms-theme-toggle />
-        <button type="button" class="icon-btn -ml-2" aria-label="Salir" title="Salir" (click)="logout()"><ms-icon name="logout" class="size-[22px]" /></button>
+        <button type="button" class="icon-btn" aria-label="Salir" title="Salir" (click)="logout()"><ms-icon name="logout" class="size-[22px]" /></button>
       </div>
     </div>
   </aside>
 
-  <main class="min-h-dvh min-w-0 px-4 pt-3 pb-32 md:pt-10 md:pr-8 md:pb-16 md:pl-28 lg:px-0 lg:pt-8">
+  <main class="min-h-dvh min-w-0 px-4 pt-3 pb-32 [view-transition-name:page] md:pt-10 md:pr-8 md:pb-16 md:pl-28 lg:px-0 lg:pt-8">
     <router-outlet />
   </main>
 
-  @if (showTrends()) {
-    <aside class="hidden 3xl:block" aria-label="Tendencias">
+  <!-- La columna existe siempre (aunque quede vacía) para no mover el contenido -->
+  <aside class="hidden 3xl:block" aria-label="Tendencias">
+    @if (showTrends()) {
       <ms-trends-panel class="sticky top-8" />
-    </aside>
-  }
+    }
+  </aside>
 </div>
 
 <!-- ===== Dock flotante (celular) ===== -->

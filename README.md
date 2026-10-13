@@ -84,7 +84,7 @@ La URL de la API del frontend está en `frontend/src/environments/environment.ts
   guardar · compartir con otro usuario.
 - Scroll infinito con orden por fecha, me gusta, guardados o compartidos · página de publicación `/p/:id`.
 - Perfiles con todos los datos, últimas publicaciones, edición, foto y visitas recibidas.
-- Tendencias, Guardados y Compartidos conmigo.
+- Búsqueda de personas y publicaciones por texto · Tendencias, Guardados y Compartidos conmigo.
 - Dashboard de administración: usuarios (alta con perfil, habilitar/deshabilitar) y 6 gráficos con período elegible.
 - PWA · 3 pipes propios (`media`, `ago`, `age`) · 3 directivas propias (`msInfiniteScroll`, `msAutosize`, `msAutofocus`).
 - Tema oscuro y claro, responsive.
@@ -94,7 +94,7 @@ La URL de la API del frontend está en `frontend/src/environments/environment.ts
 | Ruta | Descripción |
 | --- | --- |
 | `POST /auth/register` · `POST /auth/login` · `POST /auth/autorizar` · `POST /auth/refrescar` | Autenticación |
-| `GET /posts?sort=&offset=&limit=&author=&tag=` · `POST /posts` · `GET/DELETE /posts/:id` | Publicaciones |
+| `GET /posts?sort=&offset=&limit=&author=&tag=&q=` · `POST /posts` · `GET/DELETE /posts/:id` | Publicaciones |
 | `POST/DELETE /posts/:id/like` | Me gusta |
 | `POST /posts/:id/save` · `POST /posts/:id/unsave` · `GET /posts/saved` | Guardados |
 | `POST /posts/:id/share` `{ to }` · `GET /posts/shared` | Compartidos |

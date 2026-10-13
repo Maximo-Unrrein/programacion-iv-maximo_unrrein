@@ -11,7 +11,7 @@ import { Modal } from './modal';
     <ms-modal [open]="!!confirm.request()" [label]="confirm.request()?.title ?? ''" (closed)="confirm.settle(false)" style="--modal-w: 420px">
       @if (confirm.request(); as r) {
         <div class="glass grid gap-5 bg-elevated p-6" role="alertdialog" [attr.aria-label]="r.title">
-          <div class="grid gap-2">
+          <div class="grid gap-2 pr-6">
             <h2 class="text-xl font-bold">{{ r.title }}</h2>
             <p class="text-muted">{{ r.message }}</p>
           </div>

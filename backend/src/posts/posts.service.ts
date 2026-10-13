@@ -46,6 +46,12 @@ export class PostsService {
       filter.author = author._id;
     }
     if (q.tag) filter.tags = q.tag.toLowerCase();
+    const text = q.q?.trim();
+    if (text) {
+      // Se escapan los caracteres especiales para usar el texto dentro de una expresión regular
+      const pattern = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ title: pattern }, { content: pattern }];
+    }
     if (q.before) filter.createdAt = { $lt: new Date(q.before) };
 
     const posts = await this.posts

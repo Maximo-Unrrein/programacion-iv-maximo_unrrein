@@ -141,7 +141,7 @@ export class AsciiScene {
     if (this.config.parallax) window.addEventListener('pointermove', this.onPointerMove, { passive: true });
 
     // Espera la fuente monoespaciada para que la grilla quede alineada
-    document.fonts?.load(`${this.config.cellH}px "JetBrains Mono"`).finally(() => {
+    document.fonts?.load(`${this.config.cellH}px "Geist Mono"`).finally(() => {
       if (this.reducedMotion) this.draw(0);
       else this.loop(performance.now());
     });
@@ -426,7 +426,7 @@ export class AsciiScene {
     }
 
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    ctx.font = `600 ${Math.round(cellH * 0.86)}px "JetBrains Mono", ui-monospace, monospace`;
+    ctx.font = `600 ${Math.round(cellH * 0.86)}px "Geist Mono", ui-monospace, monospace`;
     ctx.textBaseline = 'top';
     ctx.globalAlpha = this.theme === 'light' ? 0.75 : 1;
     groups.forEach((cells, tone) => {

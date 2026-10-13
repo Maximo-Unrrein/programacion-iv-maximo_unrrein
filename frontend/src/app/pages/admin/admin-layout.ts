@@ -8,7 +8,7 @@ import { Icon } from '../../shared/icon';
   selector: 'ms-admin-layout',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
   template: `
-    <div class="mx-auto grid max-w-5xl gap-6">
+    <div class="mx-auto grid w-full max-w-[880px] gap-6">
       <header class="grid gap-4">
         <div>
           <p class="font-display text-xs font-semibold tracking-[0.32em] text-muted uppercase">Panel de administración</p>

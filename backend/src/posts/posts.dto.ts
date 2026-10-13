@@ -22,6 +22,12 @@ export class FeedQueryDto {
   @IsString()
   author?: string;
 
+  /** Texto a buscar en el título o el mensaje (búsqueda). */
+  @IsOptional()
+  @MaxLength(60, { message: 'La búsqueda admite hasta 60 caracteres' })
+  @IsString()
+  q?: string;
+
   @IsOptional()
   @Matches(/^[\p{L}\p{N}_]{2,30}$/u)
   tag?: string;

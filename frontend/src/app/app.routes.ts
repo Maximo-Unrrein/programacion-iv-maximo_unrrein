@@ -31,6 +31,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/post/post-page').then((m) => m.PostPage),
       },
       {
+        path: 'buscar',
+        title: 'Buscar · MaxSend',
+        loadComponent: () => import('./pages/search/search').then((m) => m.Search),
+      },
+      {
         path: 'guardados',
         title: 'Guardados · MaxSend',
         loadComponent: () => import('./pages/saved/saved').then((m) => m.Saved),

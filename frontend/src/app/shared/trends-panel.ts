@@ -17,14 +17,9 @@ import { MediaPipe } from './pipes';
         </h2>
         <p class="mt-0.5 text-xs text-faint">Los hashtags más usados esta semana</p>
       </header>
-      <div class="flex flex-wrap gap-x-4 gap-y-2">
+      <div class="flex flex-wrap gap-2">
         @for (t of tags(); track t.tag) {
-          <a
-            routerLink="/tendencias"
-            [queryParams]="{ tag: t.tag }"
-            class="text-sm text-muted transition hover:text-fg"
-            >#{{ t.tag }} <span class="text-faint">{{ t.count }}</span></a
-          >
+          <a routerLink="/tendencias" [queryParams]="{ tag: t.tag }" class="tag-chip">#{{ t.tag }} <span class="text-faint">{{ t.count }}</span></a>
         } @empty {
           <p class="text-sm text-faint">Sin hashtags esta semana.</p>
         }
