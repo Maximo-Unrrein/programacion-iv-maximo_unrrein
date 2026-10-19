@@ -1,5 +1,15 @@
-import { Routes } from '@angular/router';
+import { Routes, UrlMatcher, UrlSegment } from '@angular/router';
 import { adminGuard, authGuard, guestGuard } from './core/auth.guard';
+
+/**
+ * `/mensajes` y `/mensajes/:username` usan la misma ruta: al cambiar de conversación
+ * el componente se reutiliza (no se vuelve a cargar la lista).
+ */
+const messagesMatcher: UrlMatcher = (segments: UrlSegment[]) => {
+  if (segments[0]?.path !== 'mensajes' || segments.length > 2) return null;
+  const posParams: Record<string, UrlSegment> = segments[1] ? { username: segments[1] } : {};
+  return { consumed: segments, posParams };
+};
 
 export const routes: Routes = [
   {
@@ -36,6 +46,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/search/search').then((m) => m.Search),
       },
       {
+        matcher: messagesMatcher,
+        title: 'Mensajes · MaxSend',
+        loadComponent: () => import('./pages/messages/messages').then((m) => m.Messages),
+      },
+      {
         path: 'guardados',
         title: 'Guardados · MaxSend',
         loadComponent: () => import('./pages/saved/saved').then((m) => m.Saved),
@@ -66,6 +81,11 @@ export const routes: Routes = [
             path: 'usuarios',
             title: 'Usuarios · Admin · MaxSend',
             loadComponent: () => import('./pages/admin/admin-users').then((m) => m.AdminUsers),
+          },
+          {
+            path: 'moderacion',
+            title: 'Moderación · Admin · MaxSend',
+            loadComponent: () => import('./pages/admin/admin-moderation').then((m) => m.AdminModeration),
           },
           {
             path: 'estadisticas',

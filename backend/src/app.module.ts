@@ -3,7 +3,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
+import { MessagesModule } from './messages/messages.module';
 import { PostsModule } from './posts/posts.module';
+import { ReportsModule } from './reports/reports.module';
 import { ProfilesModule } from './profiles/profiles.module';
 import { UsersModule } from './users/users.module';
 
@@ -20,6 +22,8 @@ import { UsersModule } from './users/users.module';
     AuthModule,
     PostsModule,
     ProfilesModule,
+    MessagesModule,
+    ReportsModule,
   ],
   controllers: [AppController],
 })

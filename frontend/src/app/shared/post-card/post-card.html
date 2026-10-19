@@ -20,6 +20,11 @@
         <ms-icon name="trash" class="size-[18px]" />
       </button>
     }
+    @if (canReport()) {
+      <button type="button" class="icon-btn size-9" title="Reportar publicación" aria-label="Reportar publicación" (click)="reportPost()">
+        <ms-icon name="flag" class="size-[18px]" />
+      </button>
+    }
   </div>
 </ng-template>
 
@@ -79,12 +84,11 @@
 
       @if (state().imageUrl) {
         <div class="relative aspect-[4/5] max-h-[68dvh] w-full overflow-hidden bg-ink @2xl:aspect-auto @2xl:h-full @2xl:max-h-none" (dblclick)="likeFromMedia()">
-          <img [src]="state().imageUrl | media" alt="" aria-hidden="true" class="absolute inset-0 size-full scale-110 object-cover opacity-50 blur-2xl" />
-          <img
-            [src]="state().imageUrl | media"
+          <!-- Una o varias imágenes (carrusel) -->
+          <ms-carousel
+            [urls]="state().imageUrls.length ? state().imageUrls : [state().imageUrl!]"
             [alt]="state().title + ' — imagen publicada por ' + state().author?.displayName"
-            class="relative size-full object-contain"
-            loading="lazy"
+            class="size-full"
           />
           @if (burst()) {
             <span class="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden="true">
@@ -162,72 +166,140 @@
           <span class="ml-auto flex"><ng-container [ngTemplateOutlet]="saveShare" /></span>
         </div>
 
-        <!-- Nuevo comentario (arriba: la lista va de más reciente a más antiguo) -->
-        <form class="flex items-center gap-2 border-b border-line py-2 pr-2 pl-4" (ngSubmit)="sendComment()">
-          <input
-            #commentInput
-            name="comment"
-            class="min-h-10 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-faint"
-            placeholder="Escribí un comentario…"
-            maxlength="300"
-            autocomplete="off"
-            aria-label="Escribí un comentario"
-            [ngModel]="draft()"
-            (ngModelChange)="draft.set($event)"
-          />
-          <button type="submit" class="icon-btn size-10 text-accent disabled:text-faint" [disabled]="!draft().trim() || sending()" aria-label="Enviar comentario">
-            <ms-icon name="send" />
-          </button>
+        <!-- Nuevo comentario o respuesta (arriba: la lista va de más reciente a más antiguo) -->
+        <form class="grid border-b border-line py-2 pr-2 pl-4" (ngSubmit)="sendComment()">
+          @if (replyTo(); as target) {
+            <div class="flex animate-fade-in items-center gap-1.5 pb-1 text-xs text-faint">
+              <ms-icon name="reply" class="size-3.5" />
+              Respondiendo a <span class="font-semibold text-muted">&#64;{{ target.author?.username }}</span>
+              <button type="button" class="ml-1 cursor-pointer rounded-full p-0.5 transition hover:text-fg" aria-label="Cancelar respuesta" (click)="cancelReply()">
+                <ms-icon name="close" class="size-3.5" />
+              </button>
+            </div>
+          }
+          <div class="flex items-center gap-2">
+            <input
+              #commentInput
+              name="comment"
+              class="min-h-10 min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-faint"
+              [placeholder]="replyTo() ? 'Escribí tu respuesta…' : 'Escribí un comentario…'"
+              maxlength="300"
+              autocomplete="off"
+              [attr.aria-label]="replyTo() ? 'Escribí tu respuesta' : 'Escribí un comentario'"
+              [ngModel]="draft()"
+              (ngModelChange)="draft.set($event)"
+              (keydown.escape)="cancelReply()"
+            />
+            <button type="submit" class="icon-btn size-10 text-accent disabled:text-faint" [disabled]="!draft().trim() || sending()" [attr.aria-label]="replyTo() ? 'Enviar respuesta' : 'Enviar comentario'">
+              <ms-icon name="send" />
+            </button>
+          </div>
         </form>
+
+        <!-- Un comentario (principal o respuesta): texto, me gusta, responder, editar, reportar y borrar -->
+        <ng-template #commentItem let-c let-root="root">
+          <div class="group/c flex gap-2.5">
+            <a [routerLink]="['/u', c.author?.username]" class="mt-0.5 shrink-0"><ms-avatar [user]="c.author" [size]="c.parentId ? 24 : 28" /></a>
+            <div class="min-w-0 flex-1 text-[15px] leading-snug">
+              <a [routerLink]="['/u', c.author?.username]" class="mr-1.5 font-semibold hover:underline">{{ c.author?.displayName }}</a>
+              @if (editingId() === c.id) {
+                <form class="mt-1 grid gap-1.5" (ngSubmit)="saveEdit(c)">
+                  <input
+                    name="edit"
+                    class="input-field min-h-9 px-3 py-1.5 text-[15px]"
+                    maxlength="300"
+                    aria-label="Editar comentario"
+                    [ngModel]="editDraft()"
+                    (ngModelChange)="editDraft.set($event)"
+                    (keydown.escape)="cancelEdit()"
+                    msAutofocus
+                    [msAutofocusSelect]="true"
+                  />
+                  <span class="flex gap-3 text-xs font-semibold">
+                    <button type="submit" class="cursor-pointer hover:underline disabled:opacity-50" [disabled]="!editDraft().trim() || savingEdit()">Guardar</button>
+                    <button type="button" class="cursor-pointer text-muted hover:text-fg" (click)="cancelEdit()">Cancelar</button>
+                  </span>
+                </form>
+              } @else {
+                <span class="wrap-anywhere">{{ c.content }}</span>
+                <div class="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-faint">
+                  <span>
+                    {{ c.createdAt | ago }}
+                    @if (c.modificado) {
+                      <span class="italic" [title]="'Editado ' + (c.modifiedAt | ago)">· editado</span>
+                    }
+                  </span>
+                  <button type="button" class="cursor-pointer font-semibold transition hover:text-fg" (click)="startReply(c, root)">Responder</button>
+                  @if (c.author?.id === me()?.id) {
+                    <button type="button" class="cursor-pointer font-semibold transition hover:text-fg" (click)="startEdit(c)">Editar</button>
+                  } @else if (!isAdmin()) {
+                    <button type="button" class="cursor-pointer font-semibold transition hover:text-fg @2xl:opacity-0 @2xl:group-hover/c:opacity-100 @2xl:focus-visible:opacity-100" (click)="reportComment(c)">
+                      Reportar
+                    </button>
+                  }
+                </div>
+              }
+            </div>
+            <!-- Me gusta del comentario -->
+            @if (editingId() !== c.id) {
+              <div class="flex shrink-0 flex-col items-center">
+                <button
+                  type="button"
+                  class="grid size-8 cursor-pointer place-items-center rounded-full transition active:scale-90"
+                  [class]="c.likedByMe ? 'text-primary' : 'text-faint hover:text-fg'"
+                  [attr.aria-pressed]="c.likedByMe"
+                  [attr.aria-label]="c.likedByMe ? 'Quitar me gusta del comentario' : 'Me gusta el comentario'"
+                  (click)="toggleCommentLike(c)"
+                >
+                  <ms-icon name="heart" [filled]="c.likedByMe" class="size-4" [class.animate-pop]="c.likedByMe" />
+                </button>
+                @if (c.likesCount) {
+                  <span class="-mt-1 text-[11px] text-faint tabular-nums">{{ c.likesCount }}</span>
+                }
+              </div>
+              @if (canDeleteComment(c)) {
+                <button
+                  type="button"
+                  class="icon-btn size-8 opacity-100 hover:text-danger @2xl:opacity-0 @2xl:group-hover/c:opacity-100 @2xl:focus-visible:opacity-100"
+                  aria-label="Borrar comentario"
+                  (click)="removeComment(c)"
+                >
+                  <ms-icon name="close" class="size-4" />
+                </button>
+              }
+            }
+          </div>
+        </ng-template>
 
         <!-- Comentarios: más recientes primero, "cargar más" trae los anteriores sin perder los ya mostrados -->
         <div #list class="scrollbar-thin flex-1 overflow-y-auto px-4 py-3 @2xl:px-5">
           <ul class="grid gap-3.5">
             @for (c of comments(); track c.id) {
-              <li class="group/c flex gap-2.5">
-                <a [routerLink]="['/u', c.author?.username]" class="mt-0.5"><ms-avatar [user]="c.author" [size]="28" /></a>
-                <div class="min-w-0 flex-1 text-[15px] leading-snug">
-                  <a [routerLink]="['/u', c.author?.username]" class="mr-1.5 font-semibold hover:underline">{{ c.author?.displayName }}</a>
-                  @if (editingId() === c.id) {
-                    <form class="mt-1 grid gap-1.5" (ngSubmit)="saveEdit(c)">
-                      <input
-                        name="edit"
-                        class="input-field min-h-9 px-3 py-1.5 text-[15px]"
-                        maxlength="300"
-                        aria-label="Editar comentario"
-                        [ngModel]="editDraft()"
-                        (ngModelChange)="editDraft.set($event)"
-                        (keydown.escape)="cancelEdit()"
-                        msAutofocus
-                        [msAutofocusSelect]="true"
-                      />
-                      <span class="flex gap-3 text-xs font-semibold">
-                        <button type="submit" class="cursor-pointer hover:underline disabled:opacity-50" [disabled]="!editDraft().trim() || savingEdit()">Guardar</button>
-                        <button type="button" class="cursor-pointer text-muted hover:text-fg" (click)="cancelEdit()">Cancelar</button>
-                      </span>
-                    </form>
-                  } @else {
-                    <span class="wrap-anywhere">{{ c.content }}</span>
-                    <div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-faint">
-                      {{ c.createdAt | ago }}
-                      @if (c.modificado) {
-                        <span class="italic" [title]="'Editado ' + (c.modifiedAt | ago)">· editado</span>
-                      }
-                      @if (c.author?.id === me()?.id) {
-                        <button type="button" class="cursor-pointer font-semibold hover:text-fg" (click)="startEdit(c)">Editar</button>
-                      }
-                    </div>
-                  }
-                </div>
-                @if (canDeleteComment(c) && editingId() !== c.id) {
+              <li class="grid gap-2">
+                <ng-container [ngTemplateOutlet]="commentItem" [ngTemplateOutletContext]="{ $implicit: c, root: c }" />
+
+                <!-- Hilo de respuestas (un nivel) -->
+                @if (c.repliesCount) {
                   <button
                     type="button"
-                    class="icon-btn size-8 opacity-100 hover:text-danger @2xl:opacity-0 @2xl:group-hover/c:opacity-100 @2xl:focus-visible:opacity-100"
-                    aria-label="Borrar comentario"
-                    (click)="removeComment(c)"
+                    class="ml-[38px] flex w-fit cursor-pointer items-center gap-2 text-xs font-semibold text-faint transition hover:text-fg"
+                    [attr.aria-expanded]="isOpen(c.id)"
+                    (click)="toggleReplies(c)"
                   >
-                    <ms-icon name="close" class="size-4" />
+                    <span class="h-px w-6 bg-line-strong"></span>
+                    @if (loadingReplies() === c.id) {
+                      Cargando…
+                    } @else {
+                      {{ isOpen(c.id) ? 'Ocultar respuestas' : 'Ver ' + c.repliesCount + (c.repliesCount === 1 ? ' respuesta' : ' respuestas') }}
+                    }
                   </button>
+                }
+                @if (isOpen(c.id)) {
+                  <ul class="ml-[38px] grid animate-fade-in gap-3 border-l border-line pl-3">
+                    @for (r of replies()[c.id] ?? []; track r.id) {
+                      <li><ng-container [ngTemplateOutlet]="commentItem" [ngTemplateOutletContext]="{ $implicit: r, root: c }" /></li>
+                    }
+                  </ul>
                 }
               </li>
             } @empty {
@@ -243,7 +315,7 @@
               [disabled]="loadingComments()"
               (click)="loadMoreComments()"
             >
-              {{ loadingComments() ? 'Cargando…' : 'Cargar más comentarios (' + (state().commentsCount - comments().length) + ')' }}
+              {{ loadingComments() ? 'Cargando…' : 'Cargar más comentarios (' + (topCount() - comments().length) + ')' }}
             </button>
           }
         </div>

@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService, errorMessage } from '../core/auth.service';
 import { PostsService } from '../core/posts.service';
@@ -9,6 +9,8 @@ import { Icon } from './icon';
 import { Modal } from './modal';
 
 const MAX_LENGTH = 500;
+/** Igual que en el backend (MAX_POST_IMAGES). */
+const MAX_IMAGES = 4;
 
 /** Diálogo para crear un envío: texto (título + mensaje) y, opcionalmente, una imagen. */
 @Component({
@@ -28,13 +30,38 @@ const MAX_LENGTH = 500;
         (drop)="onDrop($event)"
       >
         @if (preview()) {
-          <!-- Imagen adjunta (opcional) -->
+          <!-- Imágenes adjuntas (opcionales, hasta 4): la elegida en grande y abajo las miniaturas -->
           <div class="relative grid aspect-[16/10] animate-fade-in place-items-center overflow-hidden bg-ink/40 md:aspect-auto md:min-h-[440px]">
             <img [src]="preview()" alt="" class="absolute inset-0 size-full object-cover opacity-40 blur-2xl" aria-hidden="true" />
             <img [src]="preview()" alt="Vista previa de la imagen" class="relative max-h-full max-w-full object-contain" />
-            <button type="button" class="icon-btn absolute top-2 left-2 text-white/90 hover:text-white" aria-label="Quitar imagen" title="Quitar imagen" (click)="clearImage()">
+            <button type="button" class="icon-btn absolute top-2 left-2 text-white/90 hover:text-white" aria-label="Quitar esta imagen" title="Quitar esta imagen" (click)="removeImage(selected())">
               <ms-icon name="close" />
             </button>
+            <div class="absolute inset-x-0 bottom-0 flex justify-center gap-2 bg-linear-to-t from-ink/70 to-transparent p-3 pt-8">
+              @for (url of previews(); track url; let i = $index) {
+                <button
+                  type="button"
+                  class="size-12 cursor-pointer overflow-hidden rounded-xl ring-2 transition duration-300 active:scale-95"
+                  [class]="i === selected() ? 'ring-white' : 'opacity-70 ring-transparent hover:opacity-100'"
+                  [attr.aria-label]="'Ver imagen ' + (i + 1)"
+                  [attr.aria-current]="i === selected()"
+                  (click)="selected.set(i)"
+                >
+                  <img [src]="url" alt="" class="size-full object-cover" />
+                </button>
+              }
+              @if (previews().length < maxImages) {
+                <button
+                  type="button"
+                  class="grid size-12 cursor-pointer place-items-center rounded-xl border border-dashed border-white/50 text-white/80 transition hover:border-white hover:text-white active:scale-95"
+                  aria-label="Agregar otra imagen"
+                  title="Agregar otra imagen"
+                  (click)="fileInput.click()"
+                >
+                  <ms-icon name="plus" class="size-5" />
+                </button>
+              }
+            </div>
           </div>
         }
 
@@ -75,17 +102,18 @@ const MAX_LENGTH = 500;
             <p class="text-sm text-danger" role="alert">{{ error() }}</p>
           }
           <div class="flex items-center gap-2 border-t border-line pt-3">
-            <!-- La imagen es opcional: se adjunta desde acá o arrastrándola sobre el diálogo -->
+            <!-- Las imágenes son opcionales: se adjuntan desde acá o arrastrándolas sobre el diálogo -->
             <button
               type="button"
-              class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full px-3 text-sm font-medium text-muted transition hover:text-fg"
-              [title]="preview() ? 'Cambiar imagen' : 'Agregar imagen (opcional)'"
+              class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full px-3 text-sm font-medium text-muted transition hover:text-fg disabled:cursor-not-allowed disabled:opacity-40"
+              [title]="preview() ? 'Agregar otra imagen' : 'Agregar imágenes (opcional, hasta 4)'"
+              [disabled]="images().length >= maxImages"
               (click)="fileInput.click()"
             >
               <ms-icon name="image" />
-              <span class="hidden sm:inline">{{ preview() ? 'Cambiar imagen' : 'Imagen (opcional)' }}</span>
+              <span class="hidden sm:inline">{{ preview() ? images().length + '/' + maxImages + ' imágenes' : 'Imágenes (opcional)' }}</span>
             </button>
-            <input #fileInput type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" (change)="onFile($event)" />
+            <input #fileInput type="file" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden" multiple (change)="onFile($event)" />
             <span class="ml-auto text-xs tabular-nums" [class]="remaining() < 40 ? 'text-danger' : 'text-faint'">{{ remaining() }}</span>
             <button class="btn btn-primary min-h-10 px-6 text-sm" type="submit" [disabled]="!canPublish()">
               {{ sending() ? 'Enviando…' : 'Enviar' }}
@@ -102,46 +130,51 @@ export class Composer {
   private readonly api = inject(PostsService);
 
   protected readonly maxLength = MAX_LENGTH;
+  protected readonly maxImages = MAX_IMAGES;
   protected readonly title = signal('');
   protected readonly content = signal('');
-  protected readonly image = signal<File | null>(null);
-  protected readonly preview = signal<string | null>(null);
+  /** Imágenes elegidas (en orden del carrusel) y sus vistas previas locales. */
+  protected readonly images = signal<File[]>([]);
+  protected readonly previews = signal<string[]>([]);
+  /** Imagen que se ve en grande. */
+  protected readonly selected = signal(0);
+  protected readonly preview = computed(() => this.previews()[this.selected()] ?? null);
   protected readonly error = signal<string | null>(null);
   protected readonly sending = signal(false);
   protected readonly dragging = signal(false);
   protected readonly remaining = computed(() => MAX_LENGTH - this.content().length);
-  /** Título y mensaje son obligatorios; la imagen es opcional. */
+  /** Título y mensaje son obligatorios; las imágenes son opcionales. */
   protected readonly canPublish = computed(() => !this.sending() && !!this.title().trim() && !!this.content().trim());
 
-  private readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
-
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.setImage(null));
+    inject(DestroyRef).onDestroy(() => this.clearImages());
   }
 
   protected onFile(event: Event) {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+    const files = [...(input.files ?? [])];
     input.value = '';
-    if (file) this.pick(file);
+    this.add(files);
   }
 
   protected onDrop(event: DragEvent) {
     event.preventDefault();
     this.dragging.set(false);
-    const file = event.dataTransfer?.files[0];
-    if (file) this.pick(file);
+    this.add([...(event.dataTransfer?.files ?? [])]);
   }
 
-  protected clearImage() {
-    this.setImage(null);
+  protected removeImage(index: number) {
+    URL.revokeObjectURL(this.previews()[index]);
+    this.images.update((list) => list.filter((_, i) => i !== index));
+    this.previews.update((list) => list.filter((_, i) => i !== index));
+    this.selected.set(Math.max(0, Math.min(this.selected(), this.previews().length - 1)));
   }
 
   protected publish() {
     if (!this.canPublish()) return;
     this.sending.set(true);
     this.error.set(null);
-    this.api.create(this.title().trim(), this.content().trim(), this.image()).subscribe({
+    this.api.create(this.title().trim(), this.content().trim(), this.images()).subscribe({
       next: (post) => {
         this.ui.postCreated.next(post);
         this.ui.toast('¡Envío publicado!');
@@ -160,23 +193,32 @@ export class Composer {
     this.ui.composerOpen.set(false);
   }
 
-  private pick(file: File) {
-    const problem = validateImage(file, 8);
-    this.error.set(problem);
-    if (!problem) this.setImage(file);
+  /** Agrega las imágenes válidas hasta completar el máximo; la última agregada queda a la vista. */
+  private add(files: File[]) {
+    if (!files.length) return;
+    const room = MAX_IMAGES - this.images().length;
+    const problems = files.map((f) => validateImage(f, 8)).filter(Boolean);
+    const valid = files.filter((f) => !validateImage(f, 8)).slice(0, Math.max(0, room));
+    this.error.set(
+      problems[0] ?? (files.length - problems.length > room ? `Podés adjuntar hasta ${MAX_IMAGES} imágenes.` : null),
+    );
+    if (!valid.length) return;
+    this.images.update((list) => [...list, ...valid]);
+    this.previews.update((list) => [...list, ...valid.map((f) => URL.createObjectURL(f))]);
+    this.selected.set(this.previews().length - 1);
   }
 
-  private setImage(file: File | null) {
-    const previous = this.preview();
-    if (previous) URL.revokeObjectURL(previous);
-    this.image.set(file);
-    this.preview.set(file ? URL.createObjectURL(file) : null);
+  private clearImages() {
+    this.previews().forEach((url) => URL.revokeObjectURL(url));
+    this.images.set([]);
+    this.previews.set([]);
+    this.selected.set(0);
   }
 
   private reset() {
     this.title.set('');
     this.content.set('');
-    this.setImage(null);
+    this.clearImages();
     this.error.set(null);
   }
 }

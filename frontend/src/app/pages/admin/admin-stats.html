@@ -35,6 +35,9 @@
         Hasta
         <input type="date" class="input-field min-h-10 py-1.5 text-sm" [value]="period().to" [min]="period().from" [max]="today" (change)="setRange('to', $any($event.target).value)" />
       </label>
+      <button type="button" class="btn btn-ghost min-h-10 px-4 text-sm" [disabled]="!series()" (click)="exportCsv()">
+        <ms-icon name="download" class="size-4" /> Exportar CSV
+      </button>
     </div>
   </section>
   @if (rangeError() || chartsError(); as message) {
@@ -50,6 +53,7 @@
           <p class="text-xs text-faint">Barras · {{ period().from | date: 'd MMM' : 'UTC' }} – {{ period().to | date: 'd MMM y' : 'UTC' }}</p>
         </div>
         <span class="font-display text-2xl font-bold">{{ series()?.postsByUser?.total ?? '—' }}</span>
+        <button type="button" class="icon-btn size-8 self-start" title="Descargar CSV" aria-label="Descargar CSV" [disabled]="!series()" (click)="exportCsv('publicaciones-por-usuario')"><ms-icon name="download" class="size-4" /></button>
       </header>
       @if (series(); as s) {
         @if (s.postsByUser.data.length) {
@@ -69,6 +73,7 @@
           <p class="text-xs text-faint">Línea · por día</p>
         </div>
         <span class="font-display text-2xl font-bold">{{ series()?.commentsByDay?.total ?? '—' }}</span>
+        <button type="button" class="icon-btn size-8 self-start" title="Descargar CSV" aria-label="Descargar CSV" [disabled]="!series()" (click)="exportCsv('comentarios-por-dia')"><ms-icon name="download" class="size-4" /></button>
       </header>
       @if (series(); as s) {
         <ms-chart kind="line" label="Comentarios" [labels]="s.commentsByDay.labels" [data]="s.commentsByDay.data" class="h-64" />
@@ -78,9 +83,12 @@
     </section>
 
     <section class="glass grid gap-3 p-5" aria-labelledby="c3">
-      <header>
-        <h2 id="c3" class="font-display font-semibold">Comentarios por publicación</h2>
-        <p class="text-xs text-faint">Torta · las 10 publicaciones con más comentarios del período</p>
+      <header class="flex items-baseline justify-between gap-2">
+        <div>
+          <h2 id="c3" class="font-display font-semibold">Comentarios por publicación</h2>
+          <p class="text-xs text-faint">Torta · las 10 publicaciones con más comentarios del período</p>
+        </div>
+        <button type="button" class="icon-btn size-8 self-start" title="Descargar CSV" aria-label="Descargar CSV" [disabled]="!series()" (click)="exportCsv('comentarios-por-publicacion')"><ms-icon name="download" class="size-4" /></button>
       </header>
       @if (series(); as s) {
         @if (s.commentsByPost.data.length) {
@@ -100,6 +108,7 @@
           <p class="text-xs text-faint">Barras · por día</p>
         </div>
         <span class="font-display text-2xl font-bold">{{ series()?.likesByDay?.total ?? '—' }}</span>
+        <button type="button" class="icon-btn size-8 self-start" title="Descargar CSV" aria-label="Descargar CSV" [disabled]="!series()" (click)="exportCsv('me-gusta-por-dia')"><ms-icon name="download" class="size-4" /></button>
       </header>
       @if (series(); as s) {
         <ms-chart kind="bar" label="Me gusta" [labels]="s.likesByDay.labels" [data]="s.likesByDay.data" class="h-64" />
@@ -115,6 +124,7 @@
           <p class="text-xs text-faint">Torta · logins en el período</p>
         </div>
         <span class="font-display text-2xl font-bold">{{ series()?.loginsByUser?.total ?? '—' }}</span>
+        <button type="button" class="icon-btn size-8 self-start" title="Descargar CSV" aria-label="Descargar CSV" [disabled]="!series()" (click)="exportCsv('ingresos-por-usuario')"><ms-icon name="download" class="size-4" /></button>
       </header>
       @if (series(); as s) {
         @if (s.loginsByUser.data.length) {
@@ -134,6 +144,7 @@
           <p class="text-xs text-faint">Barras · sólo visitas de otros usuarios</p>
         </div>
         <span class="font-display text-2xl font-bold">{{ series()?.visitsByProfile?.total ?? '—' }}</span>
+        <button type="button" class="icon-btn size-8 self-start" title="Descargar CSV" aria-label="Descargar CSV" [disabled]="!series()" (click)="exportCsv('visitas-por-perfil')"><ms-icon name="download" class="size-4" /></button>
       </header>
       @if (series(); as s) {
         @if (s.visitsByProfile.data.length) {

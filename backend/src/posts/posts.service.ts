@@ -5,12 +5,13 @@ import type { JwtPayload } from '../auth/auth.service';
 import { ACTIVE, softDelete } from '../common/soft-delete';
 import { mediaUrl } from '../common/uploads';
 import { MediaService } from '../media/media.service';
-import { AUTHOR_FIELDS, authorView, CommentView, extractTags } from '../common/views';
+import { MessagesService } from '../messages/messages.service';
+import { AUTHOR_FIELDS, authorView, extractTags } from '../common/views';
 import { UsersService } from '../users/users.service';
 import { Comment } from './comment.schema';
-import { CommentsService } from './comments.service';
+import { CommentPreview, CommentsService } from './comments.service';
 import { Like } from './like.schema';
-import { Post } from './post.schema';
+import { MAX_POST_IMAGES, Post } from './post.schema';
 import { Save, Share } from './save-share.schemas';
 import { CreatePostDto, FeedQueryDto, FeedSort } from './posts.dto';
 
@@ -36,6 +37,7 @@ export class PostsService {
     private readonly commentsService: CommentsService,
     private readonly users: UsersService,
     private readonly media: MediaService,
+    private readonly messages: MessagesService,
   ) {}
 
   async feed(viewerId: string, q: FeedQueryDto) {
@@ -71,16 +73,27 @@ export class PostsService {
     return view;
   }
 
-  async create(authorId: string, dto: CreatePostDto, image?: Express.Multer.File) {
+  /** Crea la publicación con sus imágenes (opcionales, hasta MAX_POST_IMAGES, en el orden recibido). */
+  async create(authorId: string, dto: CreatePostDto, files: Express.Multer.File[] = []) {
     const title = dto.title.trim();
     const content = dto.content.trim();
     if (!title || !content) throw new BadRequestException('La publicación necesita título y mensaje');
-    const imageId = image ? await this.media.save(image, authorId) : undefined;
+    if (files.length > MAX_POST_IMAGES) throw new BadRequestException(`Podés adjuntar hasta ${MAX_POST_IMAGES} imágenes`);
+    const images: Types.ObjectId[] = [];
     try {
-      const post = await this.posts.create({ author: authorId, title, content, image: imageId, tags: extractTags(`${title} ${content}`) });
+      for (const file of files) images.push(await this.media.save(file, authorId));
+      const post = await this.posts.create({
+        author: authorId,
+        title,
+        content,
+        images,
+        image: images[0],
+        tags: extractTags(`${title} ${content}`),
+      });
       return await this.findOne(post.id as string, authorId);
     } catch (e) {
-      await this.media.remove(imageId);
+      // Si algo falla no quedan imágenes huérfanas
+      await Promise.all(images.map((id) => this.media.remove(id)));
       throw e;
     }
   }
@@ -167,6 +180,8 @@ export class PostsService {
       { upsert: true, timestamps: true },
     );
     if (result.upsertedCount) await this.posts.updateOne({ _id: id }, { $inc: { sharesCount: 1 } });
+    // El envío también aparece en la conversación entre los dos usuarios
+    await this.messages.sharePost(fromId, toId, id);
     const post = await this.posts.findById(id, { sharesCount: 1 }).lean();
     return { sharedWith: target.username, sharesCount: post?.sharesCount ?? 0, alreadyShared: !result.upsertedCount };
   }
@@ -210,21 +225,26 @@ export class PostsService {
     const [liked, saved, previews] = await Promise.all([
       this.likes.find({ user: viewerId, post: { $in: ids } }, { post: 1 }).lean(),
       this.saves.find({ user: viewerId, post: { $in: ids } }, { post: 1 }).lean(),
-      this.commentsService.previews(ids, PREVIEW_COMMENTS),
+      this.commentsService.previews(ids, PREVIEW_COMMENTS, viewerId),
     ]);
     const likedIds = new Set(liked.map((l) => String(l.post)));
     const savedIds = new Set(saved.map((s) => String(s.post)));
     return posts.map((p) =>
-      this.view(p, likedIds.has(String(p._id)), savedIds.has(String(p._id)), previews.get(String(p._id)) ?? []),
+      this.view(p, likedIds.has(String(p._id)), savedIds.has(String(p._id)), previews.get(String(p._id)) ?? { items: [], total: 0 }),
     );
   }
 
-  private view(p: any, likedByMe: boolean, savedByMe: boolean, comments: CommentView[]) {
+  private view(p: any, likedByMe: boolean, savedByMe: boolean, comments: CommentPreview) {
+    // Publicaciones viejas sólo tienen `image`; las nuevas, `images` (carrusel)
+    const images: unknown[] = p.images?.length ? p.images : p.image ? [p.image] : [];
+    const imageUrls = images.map((id) => mediaUrl(id) as string);
     return {
       id: String(p._id),
       title: p.title ?? '',
       content: p.content ?? '',
-      imageUrl: mediaUrl(p.image),
+      /** Portada (primera imagen) o null. */
+      imageUrl: imageUrls[0] ?? null,
+      imageUrls,
       tags: p.tags ?? [],
       likesCount: p.likesCount ?? 0,
       commentsCount: p.commentsCount ?? 0,
@@ -234,7 +254,9 @@ export class PostsService {
       author: authorView(p.author),
       likedByMe,
       savedByMe,
-      comments,
+      /** Primeros comentarios principales y cuántos principales hay (para "cargar más"). */
+      comments: comments.items,
+      topCommentsCount: comments.total,
     };
   }
 

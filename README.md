@@ -80,12 +80,15 @@ La URL de la API del frontend está en `frontend/src/environments/environment.ts
 
 - Registro completo con foto y login por correo o usuario, con validaciones y mensajes.
 - Pantalla de carga que valida el token · modal a los 10 min para extender la sesión · ante un 401 vuelve al login.
-- Publicaciones con título, mensaje e imagen · me gusta · comentarios editables y paginados · baja lógica ·
-  guardar · compartir con otro usuario.
+- Publicaciones de texto o con hasta 4 imágenes (carrusel) · me gusta · comentarios editables y paginados,
+  con respuestas en hilos de un nivel y me gusta · baja lógica · guardar · compartir con otro usuario.
+- Mensajes directos entre usuarios (lo compartido también aparece en la conversación) con aviso de no leídos.
+- Reportar publicaciones o comentarios; cola de moderación para administradores (dar de baja o descartar).
 - Scroll infinito con orden por fecha, me gusta, guardados o compartidos · página de publicación `/p/:id`.
 - Perfiles con todos los datos, últimas publicaciones, edición, foto y visitas recibidas.
 - Búsqueda de personas y publicaciones por texto · Tendencias, Guardados y Compartidos conmigo.
-- Dashboard de administración: usuarios (alta con perfil, habilitar/deshabilitar) y 6 gráficos con período elegible.
+- Dashboard de administración: usuarios (alta con perfil, habilitar/deshabilitar), moderación y 6 gráficos con
+  período elegible, exportables a CSV (cada gráfico o todos juntos).
 - PWA · 3 pipes propios (`media`, `ago`, `age`) · 3 directivas propias (`msInfiniteScroll`, `msAutosize`, `msAutofocus`).
 - Tema oscuro y claro, responsive.
 
@@ -94,11 +97,13 @@ La URL de la API del frontend está en `frontend/src/environments/environment.ts
 | Ruta | Descripción |
 | --- | --- |
 | `POST /auth/register` · `POST /auth/login` · `POST /auth/autorizar` · `POST /auth/refrescar` | Autenticación |
-| `GET /posts?sort=&offset=&limit=&author=&tag=&q=` · `POST /posts` · `GET/DELETE /posts/:id` | Publicaciones |
+| `GET /posts?sort=&offset=&limit=&author=&tag=&q=` · `POST /posts` (multipart, `images` hasta 4) · `GET/DELETE /posts/:id` | Publicaciones |
 | `POST/DELETE /posts/:id/like` | Me gusta |
 | `POST /posts/:id/save` · `POST /posts/:id/unsave` · `GET /posts/saved` | Guardados |
 | `POST /posts/:id/share` `{ to }` · `GET /posts/shared` | Compartidos |
-| `GET/POST /posts/:id/comments` · `PUT/DELETE /comments/:id` | Comentarios |
+| `GET/POST /posts/:id/comments` (`parentId` para responder) · `GET /comments/:id/replies` · `PUT/DELETE /comments/:id` · `POST/DELETE /comments/:id/like` | Comentarios |
+| `GET /messages` · `GET /messages/unread` · `GET/POST /messages/:username` | Mensajes directos |
+| `POST /reports` · Admin: `GET /reports?status=` · `GET /reports/pending-count` · `POST /reports/:targetId/resolve` | Moderación |
 | `GET /trends/posts` · `GET /trends/tags` | Tendencias |
 | `GET /users/:username` · `GET /users/search` · `PATCH /users/me` · `POST/DELETE /users/me/avatar` | Perfiles |
 | `GET /media/:id` | Imágenes |

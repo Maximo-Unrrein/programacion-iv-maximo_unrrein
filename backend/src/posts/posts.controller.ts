@@ -7,16 +7,17 @@ import {
   Param,
   Post,
   Query,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { JwtPayload } from '../auth/auth.service';
 import { imageUploadOptions } from '../common/uploads';
 import { CommentsQueryDto, CreatePostDto, FeedQueryDto, ShareDto, TrendsQueryDto } from './posts.dto';
+import { MAX_POST_IMAGES } from './post.schema';
 import { PostsService } from './posts.service';
 import { TrendsService } from './trends.service';
 
@@ -74,15 +75,27 @@ export class PostsController {
     return this.posts.findOne(id, user.sub);
   }
 
-  /** multipart/form-data: `title` + `content` (obligatorios) + `image` (opcional, máx. 8 MB). */
+  /**
+   * multipart/form-data: `title` + `content` (obligatorios) + `images` (opcional, hasta 4, máx. 8 MB c/u).
+   * También acepta un único `image`, como antes del carrusel.
+   */
   @Post('posts')
-  @UseInterceptors(FileInterceptor('image', imageUploadOptions(8)))
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        // Se aceptan algunos de más para responder con un mensaje claro (lo valida el servicio)
+        { name: 'images', maxCount: MAX_POST_IMAGES + 4 },
+        { name: 'image', maxCount: 1 },
+      ],
+      imageUploadOptions(8, MAX_POST_IMAGES + 5),
+    ),
+  )
   create(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreatePostDto,
-    @UploadedFile() image?: Express.Multer.File,
+    @UploadedFiles() files: { images?: Express.Multer.File[]; image?: Express.Multer.File[] } = {},
   ) {
-    return this.posts.create(user.sub, dto, image);
+    return this.posts.create(user.sub, dto, [...(files.image ?? []), ...(files.images ?? [])]);
   }
 
   @Delete('posts/:id')

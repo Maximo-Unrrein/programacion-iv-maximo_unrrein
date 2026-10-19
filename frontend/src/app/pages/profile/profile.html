@@ -110,6 +110,10 @@
                 </button>
               }
             </div>
+          } @else {
+            <a [routerLink]="['/mensajes', p.username]" class="btn btn-ghost min-h-10 justify-self-center px-5 text-sm sm:justify-self-start">
+              <ms-icon name="message" class="size-4" /> Enviar mensaje
+            </a>
           }
         } @else {
           <!-- ===== Edición de perfil ===== -->

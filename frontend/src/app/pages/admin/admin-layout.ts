@@ -1,9 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { ModerationService } from '../../core/moderation.service';
 import { Icon } from '../../shared/icon';
 
-/** Dashboard de administración (sólo perfil administrador): pestañas Usuarios y Estadísticas. */
+/** Dashboard de administración (sólo perfil administrador): Usuarios, Moderación y Estadísticas. */
 @Component({
   selector: 'ms-admin-layout',
   imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon],
@@ -25,6 +26,9 @@ import { Icon } from '../../shared/icon';
               [attr.aria-current]="rla.isActive ? 'page' : null"
             >
               <ms-icon [name]="tab.icon" class="size-4" /> {{ tab.label }}
+              @if (tab.link === 'moderacion' && moderation.pending()) {
+                <span class="grid min-w-5 place-items-center rounded-full bg-fg px-1.5 text-[11px] leading-5 font-bold text-bg">{{ moderation.pending() }}</span>
+              }
             </a>
           }
         </nav>
@@ -35,8 +39,10 @@ import { Icon } from '../../shared/icon';
 })
 export class AdminLayout {
   protected readonly auth = inject(AuthService);
+  protected readonly moderation = inject(ModerationService);
   protected readonly tabs = [
     { link: 'usuarios', label: 'Usuarios', icon: 'user' as const },
+    { link: 'moderacion', label: 'Moderación', icon: 'flag' as const },
     { link: 'estadisticas', label: 'Estadísticas', icon: 'trend' as const },
   ];
 }

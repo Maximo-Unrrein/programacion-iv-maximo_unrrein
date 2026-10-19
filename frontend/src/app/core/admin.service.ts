@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../environments/environment';
 import type { User } from './auth.service';
+import type { ReportGroup, ReportStatus } from './models';
 
 export interface StatsSummary {
   users: number;
@@ -95,6 +96,22 @@ export class AdminService {
 
   likesByDay(period: Period) {
     return this.http.get<PerDay>(`${this.api}/stats/likes-by-day`, { params: params(period) });
+  }
+
+  // ---------- moderación ----------
+
+  /** Cola de denuncias agrupadas por contenido. */
+  reports(status: ReportStatus = 'pendiente') {
+    return this.http.get<ReportGroup[]>(`${this.api}/reports`, { params: { status } });
+  }
+
+  pendingReports() {
+    return this.http.get<{ count: number }>(`${this.api}/reports/pending-count`);
+  }
+
+  /** `eliminar` da de baja el contenido; `descartar` lo deja publicado. */
+  resolveReport(targetId: string, action: 'eliminar' | 'descartar') {
+    return this.http.post<{ resolved: number }>(`${this.api}/reports/${targetId}/resolve`, { action });
   }
 }
 

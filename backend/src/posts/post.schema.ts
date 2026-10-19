@@ -18,7 +18,11 @@ export class Post extends SoftDeletable {
   @Prop({ trim: true, maxlength: 500, default: '' })
   content: string;
 
-  /** Imagen adjunta opcional (colección `media`). */
+  /** Imágenes adjuntas (colección `media`), en orden del carrusel. Hasta MAX_POST_IMAGES. */
+  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'Media' }], default: [] })
+  images: Types.ObjectId[];
+
+  /** Primera imagen (portada). Se mantiene por compatibilidad con publicaciones de una sola imagen. */
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Media' })
   image?: Types.ObjectId;
 
@@ -44,3 +48,6 @@ export class Post extends SoftDeletable {
 
 export const PostSchema = SchemaFactory.createForClass(Post);
 PostSchema.index({ createdAt: -1 });
+
+/** Máximo de imágenes por publicación. */
+export const MAX_POST_IMAGES = 4;

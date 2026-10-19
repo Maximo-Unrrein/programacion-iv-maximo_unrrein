@@ -8,11 +8,17 @@ export interface Author {
 export interface Comment {
   id: string;
   postId: string;
+  /** Comentario principal al que responde (`null` si es principal). */
+  parentId: string | null;
   content: string;
   createdAt: string;
   /** El autor lo editó después de publicarlo. */
   modificado: boolean;
   modifiedAt: string | null;
+  likesCount: number;
+  likedByMe: boolean;
+  /** Respuestas (sólo en comentarios principales). */
+  repliesCount: number;
   author: Author | null;
 }
 
@@ -29,7 +35,10 @@ export interface Post {
   id: string;
   title: string;
   content: string;
+  /** Portada (primera imagen) o null. */
   imageUrl: string | null;
+  /** Todas las imágenes, en orden del carrusel. */
+  imageUrls: string[];
   tags: string[];
   likesCount: number;
   commentsCount: number;
@@ -40,8 +49,10 @@ export interface Post {
   likedByMe: boolean;
   /** Está en mis guardados. */
   savedByMe: boolean;
-  /** Últimos comentarios, los más recientes primero (vista previa). */
+  /** Últimos comentarios principales, los más recientes primero (vista previa). */
   comments: Comment[];
+  /** Cantidad de comentarios principales (`commentsCount` incluye las respuestas). */
+  topCommentsCount: number;
 }
 
 export interface Profile extends Author {
@@ -81,4 +92,65 @@ export interface TrendItem {
 export interface TagTrend {
   tag: string;
   count: number;
+}
+
+// ---------- mensajes directos ----------
+
+export interface Conversation {
+  user: Author;
+  unread: number;
+  last: { content: string; fromMe: boolean; createdAt: string; hasPost: boolean };
+}
+
+export interface Message {
+  id: string;
+  fromMe: boolean;
+  content: string;
+  createdAt: string;
+  readAt: string | null;
+  /** Publicación compartida en el mensaje. */
+  post: { id: string; title: string; imageUrl: string | null; author: Author | null } | null;
+  /** Tenía una publicación que ya no está disponible. */
+  postUnavailable: boolean;
+}
+
+export interface Thread {
+  user: Author;
+  /** Los más nuevos primero. */
+  items: Message[];
+  hasMore: boolean;
+}
+
+// ---------- moderación ----------
+
+export type ReportType = 'post' | 'comment';
+export type ReportReason = 'spam' | 'ofensivo' | 'inapropiado' | 'falso' | 'otro';
+export type ReportStatus = 'pendiente' | 'resuelto' | 'descartado';
+
+export const REPORT_REASONS: { id: ReportReason; label: string; hint: string }[] = [
+  { id: 'spam', label: 'Spam', hint: 'Publicidad, enlaces engañosos o contenido repetido' },
+  { id: 'ofensivo', label: 'Ofensivo', hint: 'Insultos, acoso o discurso de odio' },
+  { id: 'inapropiado', label: 'Inapropiado', hint: 'Contenido violento o sexual' },
+  { id: 'falso', label: 'Información falsa', hint: 'Engaños o datos falsos' },
+  { id: 'otro', label: 'Otro motivo', hint: 'Contanos qué pasa en el detalle' },
+];
+
+/** Un contenido denunciado con todas sus denuncias (cola de moderación). */
+export interface ReportGroup {
+  targetId: string;
+  type: ReportType;
+  postId: string;
+  count: number;
+  reasons: Partial<Record<ReportReason, number>>;
+  lastAt: string;
+  resolvedAt: string | null;
+  target: {
+    title: string | null;
+    content: string;
+    imageUrl: string | null;
+    author: Author | null;
+    deleted: boolean;
+    createdAt: string;
+  } | null;
+  reports: { reporter: Author | null; reason: ReportReason; detail: string; createdAt: string }[];
 }

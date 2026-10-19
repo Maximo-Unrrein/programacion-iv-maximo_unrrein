@@ -18,6 +18,9 @@
     } @else {
       <ms-icon [name]="item.icon" class="size-6" />
     }
+    @if (item.badge) {
+      <span class="absolute top-1.5 right-1.5 grid min-w-4 place-items-center rounded-full bg-fg px-1 text-[10px] leading-4 font-bold text-bg">{{ item.badge > 9 ? '9+' : item.badge }}</span>
+    }
     <span
       class="absolute -bottom-0.5 size-1 rounded-full bg-primary shadow-[0_0_8px_2px_rgb(var(--glow-rgb)/0.8)] transition md:top-1/2 md:-left-3.5 md:bottom-auto md:-translate-y-1/2"
       [class.opacity-0]="!rla.isActive"
@@ -48,6 +51,12 @@
   <div class="flex items-center">
     <a routerLink="/buscar" routerLinkActive="!text-fg" class="icon-btn" aria-label="Buscar" title="Buscar">
       <ms-icon name="search" class="size-[22px]" />
+    </a>
+    <a routerLink="/mensajes" routerLinkActive="!text-fg" class="icon-btn relative" aria-label="Mensajes" title="Mensajes">
+      <ms-icon name="message" class="size-[22px]" />
+      @if (messages.unread()) {
+        <span class="absolute top-2 right-2 size-2 rounded-full bg-fg ring-2 ring-bg" aria-label="Mensajes sin leer"></span>
+      }
     </a>
     <a routerLink="/compartidos" routerLinkActive="!text-fg" class="icon-btn" aria-label="Compartidos conmigo" title="Compartidos conmigo">
       <ms-icon name="inbox" class="size-[22px]" />
@@ -92,6 +101,11 @@
               <span class="font-medium transition" [class]="rla.isActive ? 'text-fg' : 'text-muted group-hover:text-fg'">{{ item.label }}</span>
               <span class="text-xs text-faint">{{ item.hint }}</span>
             </span>
+            @if (item.badge) {
+              <span class="mr-2 ml-auto grid min-w-5 animate-fade-in place-items-center rounded-full bg-fg px-1.5 text-[11px] leading-5 font-bold text-bg tabular-nums">
+                {{ item.badge > 99 ? '99+' : item.badge }}
+              </span>
+            }
           </a>
         }
       </nav>
@@ -135,5 +149,6 @@
 </nav>
 
 <ms-composer />
+<ms-report-dialog />
 <ms-toasts />
 <ms-session-watch />

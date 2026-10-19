@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AuthService, errorMessage } from '../../core/auth.service';
 import { ConfirmService } from '../../core/confirm.service';
 import { Post, Profile as ProfileModel } from '../../core/models';
@@ -20,7 +21,7 @@ const BIO_MAX = 280;
 
 @Component({
   selector: 'ms-profile',
-  imports: [DatePipe, AgePipe, ReactiveFormsModule, Avatar, Icon, PostCard],
+  imports: [DatePipe, AgePipe, ReactiveFormsModule, RouterLink, Avatar, Icon, PostCard],
   templateUrl: './profile.html',
 })
 export class Profile {

@@ -1,7 +1,20 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { environment } from '../../environments/environment';
-import { Author, Comment, CommentPage, FeedSort, Post, SharedItem, TagTrend, TrendItem, TrendSort, TrendWindow } from './models';
+import {
+  Author,
+  Comment,
+  CommentPage,
+  FeedSort,
+  Post,
+  ReportReason,
+  ReportType,
+  SharedItem,
+  TagTrend,
+  TrendItem,
+  TrendSort,
+  TrendWindow,
+} from './models';
 
 export type FeedQuery = {
   author?: string;
@@ -24,11 +37,12 @@ export class PostsService {
     return this.http.get<Post[]>(`${this.api}/posts`, { params: clean(query) });
   }
 
-  create(title: string, content: string, image?: File | null) {
+  /** Crea una publicación con sus imágenes (opcionales, hasta 4, en orden del carrusel). */
+  create(title: string, content: string, images: File[] = []) {
     const body = new FormData();
     body.append('title', title);
     body.append('content', content);
-    if (image) body.append('image', image);
+    for (const image of images) body.append('images', image);
     return this.http.post<Post>(`${this.api}/posts`, body);
   }
 
@@ -86,12 +100,32 @@ export class PostsService {
     return this.http.put<Comment>(`${this.api}/comments/${id}`, { content });
   }
 
-  addComment(postId: string, content: string) {
-    return this.http.post<Comment>(`${this.api}/posts/${postId}/comments`, { content });
+  /** Comentario nuevo; con `parentId` es una respuesta (hilo de un nivel). */
+  addComment(postId: string, content: string, parentId?: string) {
+    return this.http.post<Comment>(`${this.api}/posts/${postId}/comments`, { content, ...(parentId && { parentId }) });
   }
 
+  /** Respuestas de un comentario, las más antiguas primero. */
+  replies(commentId: string, offset = 0, limit = 20) {
+    return this.http.get<CommentPage>(`${this.api}/comments/${commentId}/replies`, { params: { offset, limit } });
+  }
+
+  /** Baja del comentario (y de sus respuestas si es principal). */
   removeComment(id: string) {
-    return this.http.delete<void>(`${this.api}/comments/${id}`);
+    return this.http.delete<{ removed: number }>(`${this.api}/comments/${id}`);
+  }
+
+  likeComment(id: string) {
+    return this.http.post<{ liked: boolean; likesCount: number }>(`${this.api}/comments/${id}/like`, {});
+  }
+
+  unlikeComment(id: string) {
+    return this.http.delete<{ liked: boolean; likesCount: number }>(`${this.api}/comments/${id}/like`);
+  }
+
+  /** Denuncia una publicación o un comentario. */
+  report(type: ReportType, targetId: string, reason: ReportReason, detail?: string) {
+    return this.http.post<{ reported: boolean }>(`${this.api}/reports`, { type, targetId, reason, ...(detail && { detail }) });
   }
 
   trending(sort: TrendSort, window: TrendWindow, tag?: string) {

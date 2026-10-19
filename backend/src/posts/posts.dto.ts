@@ -85,6 +85,13 @@ export class CreateCommentDto {
   content: string;
 }
 
+/** Comentario nuevo: con `parentId` es una respuesta (hilo de un nivel). */
+export class NewCommentDto extends CreateCommentDto {
+  @IsOptional()
+  @IsMongoId({ message: 'El comentario al que respondés no es válido' })
+  parentId?: string;
+}
+
 export const TREND_WINDOWS = ['24h', '7d', '30d'] as const;
 export type TrendWindow = (typeof TREND_WINDOWS)[number];
 

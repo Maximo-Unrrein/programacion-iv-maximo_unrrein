@@ -23,10 +23,11 @@ import { provideServiceWorker } from '@angular/service-worker';
 
 registerLocaleData(localeEs);
 
-/** Ruta completa (sin query params) de una navegación. */
-const routePath = (route: ActivatedRouteSnapshot) => {
+/** Ruta completa (sin query params) de una navegación; las conversaciones cuentan como una sola pantalla. */
+const section = (route: ActivatedRouteSnapshot) => {
   while (route.firstChild) route = route.firstChild;
-  return route.pathFromRoot.flatMap((r) => r.url.map((s) => s.path)).join('/');
+  const path = route.pathFromRoot.flatMap((r) => r.url.map((s) => s.path)).join('/');
+  return path.startsWith('mensajes') ? 'mensajes' : path;
 };
 
 export const appConfig: ApplicationConfig = {
@@ -43,7 +44,7 @@ export const appConfig: ApplicationConfig = {
         skipInitialTransition: true,
         // Si sólo cambian los query params (búsqueda, filtros) no hay fundido
         onViewTransitionCreated: ({ transition, from, to }) => {
-          if (routePath(from) === routePath(to)) transition.skipTransition();
+          if (section(from) === section(to)) transition.skipTransition();
         },
       }),
     ),
