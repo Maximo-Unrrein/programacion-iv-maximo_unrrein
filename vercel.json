@@ -4,7 +4,7 @@
     "backend": {
       "root": "backend",
       "framework": "nestjs",
-      "entrypoint": "dist/main.js"
+      "entrypoint": "server.js"
     },
     "frontend": {
       "root": "frontend",
