@@ -1,6 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { from, switchMap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { MAX_UPLOAD_BYTES, shrinkImage } from './image';
 import {
   Author,
   Comment,
@@ -37,13 +39,23 @@ export class PostsService {
     return this.http.get<Post[]>(`${this.api}/posts`, { params: clean(query) });
   }
 
-  /** Crea una publicación con sus imágenes (opcionales, hasta 4, en orden del carrusel). */
+  /**
+   * Crea una publicación con sus imágenes (opcionales, hasta 4, en orden del carrusel).
+   * Antes de subirlas se achican en el navegador para no superar el límite del hosting.
+   */
   create(title: string, content: string, images: File[] = []) {
-    const body = new FormData();
-    body.append('title', title);
-    body.append('content', content);
-    for (const image of images) body.append('images', image);
-    return this.http.post<Post>(`${this.api}/posts`, body);
+    return from(Promise.all(images.map(shrinkImage))).pipe(
+      switchMap((files) => {
+        if (files.reduce((total, f) => total + f.size, 0) > MAX_UPLOAD_BYTES) {
+          return throwError(() => new Error('Las imágenes pesan demasiado (máx. 4 MB por envío).'));
+        }
+        const body = new FormData();
+        body.append('title', title);
+        body.append('content', content);
+        for (const file of files) body.append('images', file);
+        return this.http.post<Post>(`${this.api}/posts`, body);
+      }),
+    );
   }
 
   findOne(id: string) {

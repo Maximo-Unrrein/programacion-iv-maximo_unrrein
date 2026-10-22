@@ -14,10 +14,14 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     ActivityModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.getOrThrow<string>('JWT_SECRET'),
-        signOptions: { expiresIn: config.get('JWT_EXPIRES_IN', '15m') },
-      }),
+      useFactory: (config: ConfigService) => {
+        const secret = config.getOrThrow<string>('JWT_SECRET');
+        // En producción no se arranca con un secreto de ejemplo o fácil de adivinar
+        if (process.env.NODE_ENV === 'production' && secret.length < 32) {
+          throw new Error('JWT_SECRET es demasiado corto para producción (mínimo 32 caracteres)');
+        }
+        return { secret, signOptions: { expiresIn: config.get('JWT_EXPIRES_IN', '15m') } };
+      },
     }),
   ],
   controllers: [AuthController],

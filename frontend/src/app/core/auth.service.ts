@@ -110,10 +110,14 @@ export class AuthService {
 export function errorMessage(e: unknown): string {
   if (e instanceof HttpErrorResponse) {
     if (e.status === 0) return 'No se pudo conectar con el servidor. ¿Está corriendo el backend?';
+    // El hosting corta los envíos de más de 4,5 MB antes de que lleguen a la API
+    if (e.status === 413) return 'El envío es demasiado pesado. Probá con menos imágenes o más livianas.';
     const message = e.error?.message;
     if (Array.isArray(message)) return message.join('. ');
     if (typeof message === 'string') return message;
   }
+  // Errores propios del frontend (p. ej. validaciones antes de subir)
+  if (e instanceof Error && e.message) return e.message;
   return 'Ocurrió un error inesperado';
 }
 

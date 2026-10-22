@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { from, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { shrinkImage } from './image';
 import { Profile } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -16,10 +18,15 @@ export class ProfileService {
     return this.http.patch<Profile>(`${this.url}/me`, changes);
   }
 
+  /** Sube la foto de perfil (achicada antes en el navegador). */
   uploadAvatar(file: File) {
-    const body = new FormData();
-    body.append('avatar', file);
-    return this.http.post<Profile>(`${this.url}/me/avatar`, body);
+    return from(shrinkImage(file)).pipe(
+      switchMap((small) => {
+        const body = new FormData();
+        body.append('avatar', small);
+        return this.http.post<Profile>(`${this.url}/me/avatar`, body);
+      }),
+    );
   }
 
   removeAvatar() {

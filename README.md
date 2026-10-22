@@ -32,7 +32,7 @@ Editá `backend/.env` y completá como mínimo:
 
 ```bash
 npm run setup   # sólo la primera vez: instala todo, levanta MongoDB y carga datos de prueba
-npm run dev     # levanta MongoDB + backend (:3000) + frontend (:4200)
+npm run dev     # backend (:3000) + frontend (:4200), con la base de `MONGODB_URI` (Atlas)
 ```
 
 Se abre **http://127.0.0.1:4200**. Cuentas de prueba (las crea el seed):
@@ -47,7 +47,8 @@ Se abre **http://127.0.0.1:4200**. Cuentas de prueba (las crea el seed):
 | Comando (raíz) | Qué hace |
 | --- | --- |
 | `npm run setup` | Instala dependencias, levanta MongoDB y corre el seed |
-| `npm run dev` | MongoDB + backend (watch) + frontend |
+| `npm run dev` | Backend (watch) + frontend, usando la base de `MONGODB_URI` |
+| `npm run dev:local` | Igual, pero antes levanta el MongoDB de Docker |
 | `npm run seed` | Carga/actualiza los datos de prueba (no duplica) |
 | `npm run db:up` / `npm run db:down` | Levanta / apaga MongoDB |
 
@@ -59,7 +60,45 @@ cd backend && npm install && npm run seed && npm run start:dev   # API en http:/
 cd frontend && npm install && npm start                # app en http://127.0.0.1:4200 (otra terminal)
 ```
 
-Sin Docker: cambiá `MONGODB_URI` en `backend/.env` por la URL de tu MongoDB (por ej. Atlas).
+Sin Docker: cambiá `MONGODB_URI` en `backend/.env` por la URL de tu MongoDB (por ej. Atlas, ver abajo).
+
+## Usar MongoDB Atlas
+
+1. En [cloud.mongodb.com](https://cloud.mongodb.com) creá un cluster gratis **M0** (región São Paulo, `sa-east-1`).
+2. **Database Access** → un usuario de base de datos con rol *Read and write to any database*.
+3. **Network Access** → `0.0.0.0/0` (necesario para Vercel; para probar desde tu PC alcanza con *Add current IP*).
+4. **Connect → Drivers** → copiá la cadena y agregale el nombre de la base:
+   `mongodb+srv://USUARIO:CONTRASEÑA@CLUSTER.xxxxx.mongodb.net/maxsend?retryWrites=true&w=majority`
+   (si la contraseña tiene `@ : / ? # %`, codificalos o generá una sin esos caracteres).
+5. Pegala en `MONGODB_URI` de `backend/.env` y cargá los datos de prueba:
+
+```bash
+cd backend && npm run seed && npm run start:dev
+```
+
+`npm run dev` no necesita Docker; para volver al Mongo local, poné la URI local en `.env` y usá `npm run dev:local`.
+
+## Deploy en Vercel
+
+Front y back van en **un solo proyecto** de Vercel (Services, ver `vercel.json`): `/api/...` va al backend
+(NestJS, una Vercel Function) y todo lo demás al frontend (Angular). Mismo dominio, así que no hace falta CORS.
+
+1. En Atlas → **Network Access**, agregá `0.0.0.0/0` (Vercel no tiene IPs fijas).
+2. En Vercel → **Add New Project** → importá el repo con Root Directory `./` y preset **Services**.
+3. **Environment Variables:**
+
+   | Variable | Valor |
+   | --- | --- |
+   | `MONGODB_URI` | La cadena de Atlas (con `/maxsend`) |
+   | `JWT_SECRET` | Uno nuevo de 32+ caracteres: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
+   | `JWT_EXPIRES_IN` | `15m` |
+
+4. **Deploy.** Recomendado: *Settings → Functions → Region* → São Paulo (`gru1`), cerca de Atlas.
+
+Notas:
+- En producción el frontend usa `environment.prod.ts` (API en `/api`, mismo dominio).
+- Vercel limita cada request a 4,5 MB: las imágenes se achican en el navegador antes de subirse (`core/image.ts`).
+- En producción el backend no arranca si `JWT_SECRET` tiene menos de 32 caracteres.
 
 ## Variables de entorno (`backend/.env`)
 
@@ -121,6 +160,6 @@ cd frontend && npx ng build && npx http-server dist/frontend/browser -p 8080
 ## Problemas comunes
 
 - **El backend no arranca (`JWT_SECRET`)** → falta `backend/.env`.
-- **No conecta a MongoDB** → abrí Docker Desktop y corré `npm run db:up`.
+- **No conecta a MongoDB** → con Atlas, revisá `MONGODB_URI` y que tu IP esté en *Network Access*; con Docker, abrí Docker Desktop y usá `npm run dev:local`.
 - **Puerto ocupado** → cerrá otra instancia de `npm run dev` / `ng serve`.
 - **No entra la cuenta de prueba** → la contraseña debe tener 8+ caracteres, mayúscula y número; cambiala en `.env` y corré `npm run seed`.

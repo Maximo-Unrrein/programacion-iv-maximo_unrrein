@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { shrinkImage } from '../../core/image';
 import { validateImage } from '../../core/ui.service';
 import { birthDate, errorText, matches, NAME_PATTERN, passwordPolicy, USERNAME_PATTERN } from '../../core/validators';
 import { Autosize } from '../directives';
@@ -98,7 +99,7 @@ export class UserForm {
     this.setAvatar(null);
   }
 
-  protected submit() {
+  protected async submit() {
     this.submitted.set(true);
     this.form.markAllAsTouched();
     if (this.form.invalid) {
@@ -111,7 +112,8 @@ export class UserForm {
     for (const [key, value] of Object.entries(values)) data.append(key, value.trim());
     if (this.withRole()) data.append('role', role);
     const avatar = this.avatar();
-    if (avatar) data.append('avatar', avatar);
+    // La foto se achica en el navegador antes de subirla (límite de 4,5 MB del hosting)
+    if (avatar) data.append('avatar', await shrinkImage(avatar));
     this.send.emit(data);
   }
 
