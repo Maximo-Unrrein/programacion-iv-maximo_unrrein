@@ -96,7 +96,7 @@ Dos proyectos de Vercel sobre el mismo repo:
    | `JWT_EXPIRES_IN` | `15m` |
 
    Recomendado: *Settings → Functions → Region* → São Paulo (`gru1`), cerca de Atlas.
-3. Poné la URL del backend en `frontend/vercel.json` (en lugar de `URL-DEL-BACKEND`) y subí el cambio.
+3. Poné la URL del backend en `frontend/vercel.json` (ya configurada: `programacion-iv-maximo-unrrein.vercel.app`) y subí el cambio.
 4. **Frontend:** *Add New Project* → este repo → Root Directory `frontend` (preset Angular). No necesita variables.
 5. En el backend agregá `CORS_ORIGIN` con la URL del frontend y hacé *Redeploy*.
 
