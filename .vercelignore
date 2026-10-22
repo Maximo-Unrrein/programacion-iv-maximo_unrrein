@@ -1,0 +1,5 @@
+# El package.json de la raíz sólo tiene los comandos locales (npm run dev con concurrently).
+# Vercel lo tomaba como el proyecto Node principal y dejaba al backend sin sus dependencias
+# ("Cannot find module '@nestjs/common'"). Cada servicio usa el package.json de su carpeta.
+/package.json
+/package-lock.json
