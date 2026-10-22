@@ -80,12 +80,14 @@ cd backend && npm run seed && npm run start:dev
 
 ## Deploy en Vercel
 
-Front y back van en **un solo proyecto** de Vercel (Services, ver `vercel.json`): `/api/...` va al backend
-(NestJS, una Vercel Function) y todo lo demás al frontend (Angular). Mismo dominio, así que no hace falta CORS.
+Dos proyectos de Vercel sobre el mismo repo:
+
+- **Backend** (Root Directory `backend`): NestJS como Vercel Function, sin configuración extra.
+- **Frontend** (Root Directory `frontend`): Angular estático. `frontend/vercel.json` reenvía `/api/...` al
+  backend, así el navegador usa un solo dominio y no hace falta CORS.
 
 1. En Atlas → **Network Access**, agregá `0.0.0.0/0` (Vercel no tiene IPs fijas).
-2. En Vercel → **Add New Project** → importá el repo con Root Directory `./` y preset **Services**.
-3. **Environment Variables:**
+2. **Backend:** *Add New Project* → este repo → Root Directory `backend` (preset NestJS). Variables:
 
    | Variable | Valor |
    | --- | --- |
@@ -93,7 +95,10 @@ Front y back van en **un solo proyecto** de Vercel (Services, ver `vercel.json`)
    | `JWT_SECRET` | Uno nuevo de 32+ caracteres: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
    | `JWT_EXPIRES_IN` | `15m` |
 
-4. **Deploy.** Recomendado: *Settings → Functions → Region* → São Paulo (`gru1`), cerca de Atlas.
+   Recomendado: *Settings → Functions → Region* → São Paulo (`gru1`), cerca de Atlas.
+3. Poné la URL del backend en `frontend/vercel.json` (en lugar de `URL-DEL-BACKEND`) y subí el cambio.
+4. **Frontend:** *Add New Project* → este repo → Root Directory `frontend` (preset Angular). No necesita variables.
+5. En el backend agregá `CORS_ORIGIN` con la URL del frontend y hacé *Redeploy*.
 
 Notas:
 - En producción el frontend usa `environment.prod.ts` (API en `/api`, mismo dominio).
